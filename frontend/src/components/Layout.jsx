@@ -84,7 +84,7 @@ const Layout = () => {
       {/* --- MODAL RENDERING --- */}
       <GiftCardModal isOpen={isGiftCardOpen} onClose={() => setIsGiftCardOpen(false)} />
 
-      {/* Cookie Window with DB Save Logic */}
+      {/* Cookie Window with DB Save LOGIC */}
       <CookieWindow 
         isOpen={activeModal === 'cookies'} 
         onClose={closeModal} 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Cookie = require('../models/Cookie'); // Import the model we just made
+const Cookie = require('../models/Cookie'); 
 
 // !!! REQUEST !!!
 /**
