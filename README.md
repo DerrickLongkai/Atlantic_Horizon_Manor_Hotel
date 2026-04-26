@@ -1,5 +1,6 @@
 # Atlantic Horizon Manor - Management Portal
 
+![Atlantic Horizon Manor Homepage Screenshot](./images/homepage-screenshot.png)
 A luxury hotel management system built with the **MERN Stack** (MongoDB, Express, React, Node.js). This portal allows administrators to manage bookings, gift cards, and monitor system security.
 
 ## Features
