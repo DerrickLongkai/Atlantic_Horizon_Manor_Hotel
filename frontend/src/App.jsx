@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Base layout
+// Base layout (includes Header & Footer for all client-facing pages)
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Booking from './pages/Booking';
@@ -32,14 +32,22 @@ function App() {
   return (
     <Router>
       <Routes>
+
+        {/* =========================================
+            ADMIN ROUTES (Standalone pages without Layout)
+            ========================================= */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+        {/* =========================================
+            CLIENT ROUTES (Wrapped with Layout: Header + Footer)
+            ========================================= */}
         <Route path="/" element={<Layout />}>
-          
+
           {/* Default homepage */}
           <Route index element={<Home />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/self-checkin" element={<SelfCheckIn />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="booking" element={<Booking />} />
+          <Route path="self-checkin" element={<SelfCheckIn />} />
 
           {/* Experience routes – Lincoln */}
           <Route path="michelineQualityFood" element={<MichelinFood />} />
@@ -59,6 +67,7 @@ function App() {
           <Route path="lodges" element={<PrivateLodges />} />
           <Route path="villas" element={<PrivateVillas />} />
           <Route path="exclusivity" element={<UltimateExclusivity />} />
+
         </Route>
       </Routes>
     </Router>
@@ -66,5 +75,6 @@ function App() {
 }
 
 export default App;
+
 
 
