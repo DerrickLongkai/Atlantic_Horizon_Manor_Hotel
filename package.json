@@ -1,0 +1,17 @@
+{
+  "name": "atlantic-horizon-manor-management",
+  "version": "1.0.0",
+  "description": "Root command center for Atlantic Horizon Manor Project",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm start --prefix frontend",
+    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "clean": "rimraf node_modules frontend/node_modules backend/node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "rimraf": "^5.0.0"
+  }
+}
