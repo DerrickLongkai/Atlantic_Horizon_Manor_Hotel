@@ -30,7 +30,7 @@ const Layout = () => {
   // !!! Cookie Request 
   const handleSaveCookiePreference = async (preference) => {
     try {
-      // 1. Send data to your Backend API
+       // ！！！！！Send POST request to backend API ！！！！！
       const response = await fetch(`${process.env.REACT_APP_API_URL}/cookies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

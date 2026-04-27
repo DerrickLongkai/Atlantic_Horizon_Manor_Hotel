@@ -125,7 +125,7 @@ const handleConfirm = async () => {
   //console.log("FRONTEND PAYLOAD TO SEND:", payload); // Look at browser console
 
   try {
-    // 3. Send POST request to backend API (make sure port 5001 matches your backend)
+     // ！！！！！Send POST request to backend API ！！！！！
     const response = await fetch(`${process.env.REACT_APP_API_URL}/bookings`, {
       method: 'POST',
       headers: {

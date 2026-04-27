@@ -8,20 +8,12 @@ dotenv.config();
 
 // Connect to Database
 connectDB();
-
 const app = express();
 
 
 // Middleware to parse JSON
 app.use(cors());
 app.use(express.json());
-
-
-// server.js
-app.get('/test', (req, res) => {
-  console.log("!!! HELLO! I AM ALIVE !!!");
-  res.send("Server is working!");
-});
 
 // Request logging middleware for debugging
 app.use((req, res, next) => {

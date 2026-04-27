@@ -38,6 +38,7 @@ export default function GiftCardModal({ isOpen, onClose }) {
     setIsSubmitting(true);
 
     try {
+       // ！！！！！Send POST request to backend API ！！！！！
       const response = await fetch(`${process.env.REACT_APP_API_URL}/giftcards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -172,6 +172,7 @@ function MockBookingsView() {
         const token = localStorage.getItem('staffToken');
 
         const response = await fetch(
+           // ！！！！！Send GET request to backend API ！！！！！
           `${process.env.REACT_APP_API_URL}/admin/manage/bookings`,
           {
             method: 'GET',
@@ -410,6 +411,7 @@ function MockGiftcardsView() {
       try {
         const token = localStorage.getItem('staffToken');
 
+         // ！！！！！Send GET request to backend API ！！！！！
         const response = await fetch(
           `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`,
           {
@@ -626,7 +628,7 @@ function MockLogsView() {
       try {
         const token = localStorage.getItem('staffToken');
 
-        // Must use the correct backend port + 127.0.0.1
+         // ！！！！！Send GET request to backend API ！！！！！
         const response = await fetch(
           `${process.env.REACT_APP_API_URL}/admin/manage/logs`,
           {

@@ -32,8 +32,9 @@ export default function SelfCheckIn() {
     // Reset check-in state when performing a new search
     setIsCheckedIn(false);
 
+
     try {
-      // Send POST request to backend API
+      // ！！！！！Send POST request to backend API ！！！！！
       const response = await fetch(`${process.env.REACT_APP_API_URL}/bookings/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

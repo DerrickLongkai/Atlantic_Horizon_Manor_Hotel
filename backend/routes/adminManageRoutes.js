@@ -5,6 +5,8 @@ const Giftcard = require('../models/Giftcard');
 const LoginLog = require('../models/LoginLog'); // Added the LoginLog model
 const { protectAdmin } = require('../middleware/authMiddleware');
 
+
+// !!!!!!! RESPONSE FROM DATABASE ! ! ! ! !
 /**
  * @desc    Fetch all bookings across the entire hotel
  * @route   GET /api/admin/manage/bookings
@@ -29,6 +31,8 @@ router.get('/bookings', protectAdmin, async (req, res) => {
   }
 });
 
+
+// !!!!!!! RESPONSE FROM DATABASE ! ! ! ! !
 /**
  * @desc    Fetch all gift cards issued by the hotel
  * @route   GET /api/admin/manage/giftcards
@@ -53,6 +57,8 @@ router.get('/giftcards', protectAdmin, async (req, res) => {
   }
 });
 
+
+// !!!!!!! RESPONSE FROM DATABASE ! ! ! ! !
 /**
  * @desc    Fetch Security Login Logs (Audit Trail)
  * @route   GET /api/admin/manage/logs

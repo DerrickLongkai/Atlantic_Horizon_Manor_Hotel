@@ -36,7 +36,9 @@ router.post('/', async (req, res) => {
       guestInfo
     });
 
-    // 4. Save to the database
+    // 1. This triggers the actual 'INSERT' command to the MongoDB server.
+    // 2. 'await' is mandatory here; it pauses the function until the database 
+    //    successfully acknowledges the write or returns an error.
     const savedBooking = await newBooking.save();
 
     res.status(201).json({

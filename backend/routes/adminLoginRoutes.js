@@ -4,6 +4,8 @@ const Staff = require('../models/Staff');
 const generateToken = require('../utils/generateToken');
 const LoginLog = require('../models/LoginLog');
 
+
+// !!!!!!! RESPONSE FROM DATABASE ! ! ! ! !
 /**
  * @desc    Staff/Admin Login with Security Auditing
  * @route   POST /api/admin/login

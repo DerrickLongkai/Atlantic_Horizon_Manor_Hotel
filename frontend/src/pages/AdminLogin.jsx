@@ -17,6 +17,7 @@ export default function AdminLogin() {
   setError('');
 
   try {
+     // ！！！！！Send POST request to backend API ！！！！！
     /**
      * Send login request to backend.
      * The backend validates credentials and returns:
