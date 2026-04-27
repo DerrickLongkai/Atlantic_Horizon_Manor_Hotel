@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function AdminLogin() {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -8,56 +9,63 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   /**
-   * Handle login form submission.
-   * Sends credentials to the backend 
+   * -------------------------------------------------------------
+   * Handle Login Submission
+   * -------------------------------------------------------------
+   * Sends the staff credentials to the backend using Axios.
+   *
+   * Important:
+   * - Axios is globally configured with `withCredentials = true`
+   *   (in index.js), so the browser automatically includes the
+   *   session cookie in every request.
+   * - The backend creates the session and returns staff info.
+   * - The session ID itself is stored securely in an HTTP-only
+   *   cookie, not in localStorage.
    */
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-     // ！！！！！Send POST request to backend API ！！！！！
-    /**
-     * Send login request to backend.
-     * The backend validates credentials and returns:
-     * - staff info
-     * - JWT token
-     */
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      // Send POST request to backend (port 8888)
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/admin/login`, credentials);
 
-    const data = await response.json();
+      // Axios automatically parses JSON into response.data
+      const data = response.data;
 
-    if (response.ok) {
+      if (data.success) {
+        /**
+         * Login successful:
+         * Store only non-sensitive staff info for UI display.
+         * Authentication is handled entirely by the session cookie.
+         */
+        localStorage.setItem('staffInfo', JSON.stringify(data.staff));
+
+        // Redirect to admin dashboard
+        navigate('/admin/dashboard');
+      }
+    } catch (err) {
+    
       /**
-       * Login successful:
-       * Store token + staff info for authenticated sessions.
-       * These will be used for protected routes and role checks.
+       * -------------------------------------------------------------
+       * Error Handling
+       * -------------------------------------------------------------
+       * Two main cases:
+       * 1. Backend responded with an error (e.g., 401 invalid login)
+       * 2. Network/CORS/server failure (backend offline)
        */
-      localStorage.setItem('staffToken', data.token);
-      localStorage.setItem('staffInfo', JSON.stringify(data.staff));
-
-      // Redirect to admin dashboard
-      navigate('/admin/dashboard');
-    } else {
-      // Backend returned a controlled error (401, etc.)
-      setError(data.message);
+      if (err.response && err.response.data) {
+        setError(err.response.data.message);
+      } else {
+        setError(
+          'Connection failed. Please check if backend is running on port 8888.'
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    /**
-     * Network or server connection failure.
-     * This is expected if backend is not running.
-     */
-    setError('Connection failed. Please check if backend is running on port 5001.');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 font-sans relative overflow-hidden">

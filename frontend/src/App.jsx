@@ -1,5 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import axios from 'axios';
+
+// AXIOS GLOBAL CONFIGURATION
+axios.defaults.withCredentials = true;
 
 // Base layout (includes Header & Footer for all client-facing pages)
 import Layout from './components/Layout';

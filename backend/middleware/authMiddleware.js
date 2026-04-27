@@ -1,77 +1,82 @@
-const jwt = require('jsonwebtoken');
 const Staff = require('../models/Staff');
 
 /**
- * Middleware: Protect internal admin routes using JWT authentication.
+ * -------------------------------------------------------------
+ * Middleware: Protect Admin Routes (Session-Based Authentication)
+ * -------------------------------------------------------------
+ * This middleware ensures that only authenticated staff members
+ * can access internal admin routes.
  *
- * This middleware checks:
- * 1. Whether the request contains a valid Bearer token
- * 2. Whether the token can be verified using the server secret
- * 3. Whether the decoded token corresponds to an existing staff member
+ * How it works:
+ * 1. Checks whether the request contains a valid session
+ *    (req.session.staffId).
+ * 2. Looks up the corresponding staff member in the database.
+ * 3. If found → attaches staff info to req.staff and continues.
+ * 4. If not found → destroys the invalid session and returns 401.
  *
- * If valid → attaches staff info to req.staff and continues.
- * If invalid → returns 401 Unauthorized.
+ * Security Notes:
+ * - Session-based authentication prevents token tampering.
+ * - Password is always excluded from the returned staff object.
+ * - If a staff account is deleted/disabled, their session becomes invalid.
  */
 const protectAdmin = async (req, res, next) => {
-  let token;
-
-  // ------------------------------------------------------------
-  // Check if the Authorization header exists and uses Bearer format
-  // Example: "Authorization: Bearer <token>"
-  // ------------------------------------------------------------
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  /**
+   * -------------------------------------------------------------
+   * 1. Check if the request contains a valid session
+   * -------------------------------------------------------------
+   * If staffId exists, the user *should* be authenticated.
+   * We still verify this against the database for safety.
+   */
+  if (req.session && req.session.staffId) {
     try {
-      // Extract the token (split "Bearer <token>")
-      token = req.headers.authorization.split(' ')[1];
+      /**
+       * -------------------------------------------------------------
+       * 2. Look up the staff member in the database
+       * -------------------------------------------------------------
+       * `.select('-password')` ensures the password hash is never exposed.
+       */
+      req.staff = await Staff.findById(req.session.staffId).select('-password');
 
-      // ------------------------------------------------------------
-      // Verify and decode the token
-      // - Ensures token is not expired
-      // - Ensures token is not tampered with
-      // ------------------------------------------------------------
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'manor_secret_key_2024'
-      );
-
-      // ------------------------------------------------------------
-      // Look up the staff member using the decoded ID
-      // `.select('-password')` removes the password field for safety
-      // ------------------------------------------------------------
-      req.staff = await Staff.findById(decoded.id).select('-password');
-
-      // If staff no longer exists (deleted or disabled)
+      /**
+       * If the session exists but the staff account no longer exists
+       * (e.g., deleted, disabled, or corrupted), treat it as unauthorized.
+       */
       if (!req.staff) {
+        // Destroy the invalid session for security hygiene
+        req.session.destroy();
+
         return res.status(401).json({
           success: false,
           message: 'Not authorized, staff account not found.',
         });
       }
 
-      // Authentication successful → continue to the next middleware/route
+      // Authentication successful → proceed to the next middleware/route
       return next();
-    } catch (error) {
-      console.error('Token verification failed:', error);
 
-      return res.status(401).json({
+    } catch (error) {
+      console.error('Session validation failed:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Not authorized, invalid or expired token.',
+        message: 'Server error during authentication.',
       });
     }
   }
 
-  // ------------------------------------------------------------
-  // No token provided at all
-  // ------------------------------------------------------------
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Not authorized, no token provided.',
-    });
-  }
+  /**
+   * -------------------------------------------------------------
+   * 3. No valid session found
+   * -------------------------------------------------------------
+   * This means:
+   * - User is not logged in, OR
+   * - Session expired, OR
+   * - Cookie was cleared/blocked
+   */
+  return res.status(401).json({
+    success: false,
+    message: 'Not authorized, please log in first.',
+  });
 };
 
 module.exports = { protectAdmin };
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,10 +13,9 @@ export default function AdminDashboard() {
   //    - If missing, redirect to login (basic route guard)
   // ------------------------------------------------------------
   useEffect(() => {
-    const token = localStorage.getItem('staffToken');
     const storedStaff = localStorage.getItem('staffInfo');
 
-    if (!token || !storedStaff) {
+    if (!storedStaff) {
       // No valid session → force redirect to login
       navigate('/admin/login');
       return;
@@ -61,10 +61,17 @@ export default function AdminDashboard() {
   //    - Clears session data
   //    - Redirects to login
   // ------------------------------------------------------------
-  const handleLogout = () => {
-    localStorage.removeItem('staffToken');
-    localStorage.removeItem('staffInfo');
-    navigate('/admin/login');
+  const handleLogout = async () => {
+    try{
+      // Send POST request to backend to destroy the session
+      await axios.post(`${process.env.REACT_APP_API_URL}/admin/logout`);
+    } catch (error) {
+      console.error('Error occurred while logging out:', error);
+    } finally {
+      // Regardless of backend response, clear local data and redirect
+      localStorage.removeItem('staffInfo');
+      navigate('/admin/login');
+    }
   };
 
   // Show loading screen while staffInfo is being restored
@@ -76,7 +83,7 @@ export default function AdminDashboard() {
     );
 
   return (
-    <div className="min-h-screen bg-[#141414] text-gray-300 font-sans flex">
+    <div className="h-screen overflow-hidden bg-[#141414] text-gray-300 font-sans flex">
       
       {/* ============================================================
          LEFT SIDEBAR — Branding, Staff Info, Navigation, Logout
@@ -142,8 +149,8 @@ export default function AdminDashboard() {
       {/* ============================================================
          MAIN CONTENT AREA — Renders the selected module
          ============================================================ */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-10">
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="p-10 flex-1 flex flex-col overflow-hidden">
           {/* Tab-based content switching */}
           {activeTab === 'bookings' && <MockBookingsView />}
           {activeTab === 'giftcards' && <MockGiftcardsView />}
@@ -163,36 +170,52 @@ function MockBookingsView() {
 
   /**
    * Fetch all bookings from the backend when the component mounts.
-   * This endpoint is protected, so the staff JWT must be included
-   * in the Authorization header as a Bearer token.
+   * Sending the GET request to the protected endpoint that returns real booking data.
+   * The global axios configuration in App.js automatically
+   * attaches the session cookie to every request, so there is
+   * no need to manually read tokens or set headers here.
    */
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const token = localStorage.getItem('staffToken');
-
-        const response = await fetch(
+        
+        const response = await axios.get(
            // ！！！！！Send GET request to backend API ！！！！！
-          `${process.env.REACT_APP_API_URL}/admin/manage/bookings`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+          `${process.env.REACT_APP_API_URL}/admin/manage/bookings`);
+           
+          /**
+           * Axios automatically parses JSON responses.
+           * Your backend returns `{ data: [...] }`, so the actual booking
+           * list is located at `response.data.data`.
+           */
+          setBookings(response.data.data);
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setBookings(data.data);
-        } else {
-          console.error('Failed to fetch bookings:', data.message);
-        }
       } catch (error) {
-        console.error('Network request error:', error);
+      /**
+       * -------------------------------------------------------------
+       * Centralized 401 handling
+       * -------------------------------------------------------------
+       * In a session-based authentication system, login state is
+       * determined entirely by HTTP status codes.
+       */
+          if (error.response) {
+              if (error.response.status === 401) {
+                  console.error('Unauthorized access - invalid session. Please log in again.');
+                  // When the session expires, redirect the user safely:
+                  window.location.href = '/admin/login';
+              }
+              else{
+                  console.error('Failed to fetch bookings:', error.response.data.message);
+              }
+          }
+          else{
+              console.error('Network request error:', error);
+          }
       } finally {
+      /**
+       * Regardless of success or failure, loading must be disabled
+       * so the UI can render either the data or an empty state.
+       */
         setLoading(false);
       }
     };
@@ -217,178 +240,188 @@ function MockBookingsView() {
   };
 
   return (
-    <div className="animate-fadeIn">
+    // 1. OUTER CONTAINER: Takes full height, enables vertical flex
+    <div className="animate-fadeIn h-full flex flex-col">
 
-      {/* -----------------------------------------------------------
-         Header Section — Title + Create Booking Button
-         ----------------------------------------------------------- */}
-      <div className="flex justify-between items-end mb-10">
-        <h1 className="font-serif text-4xl text-white italic tracking-wide">
-          Manage Booking
-        </h1>
+      {/* ============================================================
+          FIXED HEADER SECTION (Title, Buttons, Filters)
+          ============================================================ */}
+      {/* 2. SHRINK-0: Prevents this block from squeezing. Groups title and filters together. */}
+      <div className="shrink-0 flex flex-col gap-6 mb-8">
 
-        {/* Future: This will open a booking creation modal or page */}
-        <button className="bg-[#c9830a] hover:bg-[#d97706] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
-          + Create Booking
-        </button>
-      </div>
+        {/* Title + Create Booking Button */}
+        <div className="flex justify-between items-end">
+          <h1 className="font-serif text-4xl text-white italic tracking-wide">
+            Manage Booking
+          </h1>
 
-      {/* -----------------------------------------------------------
-         Status Filter Pills (currently only "All Bookings")
-         ----------------------------------------------------------- */}
-      <div className="flex gap-4 mb-8">
-        <div className="flex items-center gap-2 bg-[#dc8c02] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
-          <span className="text-white text-[10px] font-bold tracking-widest uppercase">
-            All Bookings
-          </span>
-          <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
-            {bookings.length}
-          </span>
-        </div>
-      </div>
-
-      {/* -----------------------------------------------------------
-         Data Table Container
-         ----------------------------------------------------------- */}
-      <div className="bg-[#141414] border border-white/5 rounded-xl p-6 min-h-[400px]">
-
-        {/* ================= Table Header ================= */}
-        <div className="flex text-[10px] tracking-widest text-gray-500 uppercase px-6 pb-4 border-b border-white/5 mb-4">
-          <div className="w-[20%]">Resident</div>
-          <div className="w-[20%]">Department/Tier</div>
-          <div className="w-[25%]">Dates</div>
-          <div className="w-[10%]">Price</div>
-          <div className="w-[10%]">Status</div>
-          <div className="w-[15%] text-right">Actions</div>
+          {/* Future: This will open a booking creation modal or page */}
+          <button className="bg-[#c9830a] hover:bg-[#d97706] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
+            + Create Booking
+          </button>
         </div>
 
-        {/* ================= Loading / Empty / Data States ================= */}
-        {loading ? (
-          <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
-            Decrypting Classified Data...
+        {/* Status Filter Pills (currently only "All Bookings") */}
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2 bg-[#dc8c02] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
+            <span className="text-white text-[10px] font-bold tracking-widest uppercase">
+              All Bookings
+            </span>
+            <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
+              {bookings.length}
+            </span>
           </div>
-        ) : bookings.length === 0 ? (
-          <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
-            No bookings found in the estate.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {bookings.map((booking) => (
-              <div
-                key={booking._id}
-                className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
-              >
+        </div>
 
-                {/* -----------------------------------------------------------
-                   1. Guest Information (20%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[20%] pr-4">
-                  <h3 className="text-white text-base font-serif tracking-wide mb-1 truncate">
-                    {booking.guestInfo?.firstName ||
-                      booking.guestInfo?.name ||
-                      'Unknown'}{' '}
-                    {booking.guestInfo?.lastName || ''}
-                  </h3>
-                  <p className="text-gray-600 text-[9px] tracking-widest uppercase">
-                    ATL-{booking._id.substring(booking._id.length - 6)}
-                  </p>
-                </div>
+      </div>
 
-                {/* -----------------------------------------------------------
-                   2. Room Type (20%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[20%]">
-                  <p className="text-gray-300 text-sm tracking-wide">
-                    {formatRoomType(booking.roomType)}
-                  </p>
-                </div>
+      {/* ============================================================
+          SCROLLABLE DATA TABLE CONTAINER
+          ============================================================ */}
+      {/* 3. FLEX-1 & OVERFLOW-Y-AUTO: Takes remaining space and enables scrolling */}
+      <div className="bg-[#141414] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative">
 
-                {/* -----------------------------------------------------------
-                   3. Date Range + Nights (25%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[25%]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-gray-300 text-[13px] tracking-wide">
-                      {booking.checkIn
-                        ? new Date(booking.checkIn).toLocaleDateString()
-                        : 'TBD'}
-                    </span>
-                    <span className="text-gray-600 text-[10px]">➔</span>
-                    <span className="text-gray-300 text-[13px] tracking-wide">
-                      {booking.checkOut
-                        ? new Date(booking.checkOut).toLocaleDateString()
-                        : 'TBD'}
+        {/* 4. STICKY HEADER: Stays at the top of the scrollable container. 
+             Matches the background color to hide scrolling items underneath. */}
+        <div className="sticky top-0 z-10 bg-[#141414] flex text-[10px] tracking-widest text-gray-500 uppercase px-6 py-5 border-b border-white/5 shadow-md">
+          <div className="w-[20%] font-medium">Resident</div>
+          <div className="w-[20%] font-medium">Department/Tier</div>
+          <div className="w-[25%] font-medium">Dates</div>
+          <div className="w-[10%] font-medium">Price</div>
+          <div className="w-[10%] font-medium">Status</div>
+          <div className="w-[15%] font-medium text-right">Actions</div>
+        </div>
+
+        {/* List Content Padding Wrapper */}
+        <div className="p-6">
+          {/* ================= Loading / Empty / Data States ================= */}
+          {loading ? (
+            <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
+              Decrypting Classified Data...
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
+              No bookings found in the estate.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bookings.map((booking) => (
+                <div
+                  key={booking._id}
+                  className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
+                >
+
+                  {/* -----------------------------------------------------------
+                     1. Guest Information (20%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[20%] pr-4">
+                    <h3 className="text-white text-base font-serif tracking-wide mb-1 truncate">
+                      {booking.guestInfo?.firstName ||
+                        booking.guestInfo?.name ||
+                        'Unknown'}{' '}
+                      {booking.guestInfo?.lastName || ''}
+                    </h3>
+                    <p className="text-gray-600 text-[9px] tracking-widest uppercase">
+                      ATL-{booking._id.substring(booking._id.length - 6)}
+                    </p>
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     2. Room Type (20%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[20%]">
+                    <p className="text-gray-300 text-sm tracking-wide">
+                      {formatRoomType(booking.roomType)}
+                    </p>
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     3. Date Range + Nights (25%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[25%]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-gray-300 text-[13px] tracking-wide">
+                        {booking.checkIn
+                          ? new Date(booking.checkIn).toLocaleDateString()
+                          : 'TBD'}
+                      </span>
+                      <span className="text-gray-600 text-[10px]">➔</span>
+                      <span className="text-gray-300 text-[13px] tracking-wide">
+                        {booking.checkOut
+                          ? new Date(booking.checkOut).toLocaleDateString()
+                          : 'TBD'}
+                      </span>
+                    </div>
+
+                    <span className="inline-block bg-white/5 text-gray-400 text-[9px] px-2 py-0.5 rounded uppercase tracking-widest">
+                      {booking.totalNights
+                        ? `${booking.totalNights} NIGHTS`
+                        : 'N/A NIGHTS'}
                     </span>
                   </div>
 
-                  <span className="inline-block bg-white/5 text-gray-400 text-[9px] px-2 py-0.5 rounded uppercase tracking-widest">
-                    {booking.totalNights
-                      ? `${booking.totalNights} NIGHTS`
-                      : 'N/A NIGHTS'}
-                  </span>
-                </div>
-
-                {/* -----------------------------------------------------------
-                   4. Price + Payment Status (10%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[10%]">
-                  <p className="text-[#f59e0b] text-sm font-bold tracking-wider mb-1">
-                    €{booking.price || 'TBD'}
-                  </p>
-                  <span className="text-gray-600 text-[9px] tracking-widest uppercase">
-                    {booking.paymentStatus === 'Paid' ? 'PAID' : 'UNPAID'}
-                  </span>
-                </div>
-
-                {/* -----------------------------------------------------------
-                   5. Booking Status (10%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[10%]">
-                  <span className="border border-[#4A6482] text-[#4A6482] bg-[#4A6482]/10 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase shadow-sm whitespace-nowrap">
-                    {booking.status || 'PENDING'}
-                  </span>
-                </div>
-
-                {/* -----------------------------------------------------------
-                   6. Action Buttons (15%)
-                   ----------------------------------------------------------- */}
-                <div className="w-[15%] flex justify-end gap-3">
-
-                  {/* Confirm */}
-                  <button className="flex flex-col items-center gap-1 group/btn">
-                    <div className="w-8 h-8 rounded-full bg-[#f59e0b] flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform">
-                      ✓
-                    </div>
-                    <span className="text-[#f59e0b] text-[8px] tracking-[0.2em] uppercase">
-                      Confirm
+                  {/* -----------------------------------------------------------
+                     4. Price + Payment Status (10%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[10%]">
+                    <p className="text-[#f59e0b] text-sm font-bold tracking-wider mb-1">
+                      €{booking.price || 'TBD'}
+                    </p>
+                    <span className="text-gray-600 text-[9px] tracking-widest uppercase">
+                      {booking.paymentStatus === 'Paid' ? 'PAID' : 'UNPAID'}
                     </span>
-                  </button>
+                  </div>
 
-                  {/* Edit */}
-                  <button className="flex flex-col items-center gap-1 group/btn">
-                    <div className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 flex items-center justify-center group-hover/btn:border-white group-hover/btn:text-white transition-all">
-                      ✎
-                    </div>
-                    <span className="text-gray-500 text-[8px] tracking-[0.2em] uppercase group-hover/btn:text-gray-300">
-                      Edit
+                  {/* -----------------------------------------------------------
+                     5. Booking Status (10%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[10%]">
+                    <span className="border border-[#4A6482] text-[#4A6482] bg-[#4A6482]/10 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase shadow-sm whitespace-nowrap">
+                      {booking.status || 'PENDING'}
                     </span>
-                  </button>
+                  </div>
 
-                  {/* Refund */}
-                  <button className="flex flex-col items-center gap-1 group/btn">
-                    <div className="w-8 h-8 rounded-full border border-red-900 text-red-500 flex items-center justify-center group-hover/btn:bg-red-900/20 transition-all">
-                      ⟲
-                    </div>
-                    <span className="text-red-500/70 text-[8px] tracking-[0.2em] uppercase">
-                      Refund
-                    </span>
-                  </button>
+                  {/* -----------------------------------------------------------
+                     6. Action Buttons (15%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[15%] flex justify-end gap-3">
 
+                    {/* Confirm */}
+                    <button className="flex flex-col items-center gap-1 group/btn">
+                      <div className="w-8 h-8 rounded-full bg-[#f59e0b] flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform">
+                        ✓
+                      </div>
+                      <span className="text-[#f59e0b] text-[8px] tracking-[0.2em] uppercase">
+                        Confirm
+                      </span>
+                    </button>
+
+                    {/* Edit */}
+                    <button className="flex flex-col items-center gap-1 group/btn">
+                      <div className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 flex items-center justify-center group-hover/btn:border-white group-hover/btn:text-white transition-all">
+                        ✎
+                      </div>
+                      <span className="text-gray-500 text-[8px] tracking-[0.2em] uppercase group-hover/btn:text-gray-300">
+                        Edit
+                      </span>
+                    </button>
+
+                    {/* Refund */}
+                    <button className="flex flex-col items-center gap-1 group/btn">
+                      <div className="w-8 h-8 rounded-full border border-red-900 text-red-500 flex items-center justify-center group-hover/btn:bg-red-900/20 transition-all">
+                        ⟲
+                      </div>
+                      <span className="text-red-500/70 text-[8px] tracking-[0.2em] uppercase">
+                        Refund
+                      </span>
+                    </button>
+
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -401,38 +434,57 @@ function MockGiftcardsView() {
   const [giftcards, setGiftcards] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /**
-   * Fetch all issued gift cards when the component mounts.
-   * This endpoint is protected, so the staff JWT must be included
-   * in the Authorization header as a Bearer token.
-   */
+      /**
+       * -------------------------------------------------------------
+       * Sending the GET request
+       * -------------------------------------------------------------
+       * No need to manually read the token, set headers, or specify
+       * withCredentials. Your global axios configuration in App.js
+       * already attaches the session cookie to every request.
+       */
   useEffect(() => {
     const fetchGiftcards = async () => {
       try {
-        const token = localStorage.getItem('staffToken');
-
          // ！！！！！Send GET request to backend API ！！！！！
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setGiftcards(data.data);
-        } else {
-          console.error('Failed to fetch giftcards:', data.message);
-        }
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`);
+        
+      /**
+       * Axios automatically parses JSON and only reaches this block
+       * when the HTTP status code is within the 2xx range.
+       *
+       * Your backend returns `{ data: [...] }`, so the actual list of
+       * gift cards is located at `response.data.data`.
+       */
+        setGiftcards(response.data.data);
       } catch (error) {
-        console.error('Network request error:', error);
+        /**
+        * -------------------------------------------------------------
+        * Error handling
+        * -------------------------------------------------------------
+        * In a session-based authentication model, login state is
+        * determined entirely by HTTP status codes.
+        */
+          if (error.response) {
+              if (error.response.status === 401) {
+                // If the session expires while the user is viewing gift cards,
+                // redirect them safely back to the login page:
+                  console.error('Unauthorized access - invalid session. Please log in again.');
+                  window.location.href = '/admin/login';
+              }
+              else{
+                  console.error('Failed to fetch giftcards:', error.response.data.message);
+              }
+          }
+          else{
+              console.error('Network request error:', error);
+          }
+        
       } finally {
+      /**
+       * Regardless of success or failure, loading must be disabled
+       * so the UI can render either the data or an empty state.
+       */
         setLoading(false);
       }
     };
@@ -441,171 +493,176 @@ function MockGiftcardsView() {
   }, []);
 
   return (
-    <div className="animate-fadeIn">
+    // 1. OUTER CONTAINER: Takes full height of the parent, enables vertical flex
+    <div className="animate-fadeIn h-full flex flex-col">
 
-      {/* -----------------------------------------------------------
-         Header Section — Title + Issue Giftcard Button
-         ----------------------------------------------------------- */}
-      <div className="flex justify-between items-end mb-10">
-        <h1 className="font-serif text-4xl text-white italic tracking-wide">
-          Giftcard Center
-        </h1>
+      {/* ============================================================
+          FIXED HEADER SECTION (Title, Buttons, Filters)
+          ============================================================ */}
+      {/* 2. SHRINK-0: Prevents this entire block from squeezing. Groups title and filters together. */}
+      <div className="shrink-0 flex flex-col gap-6 mb-8">
 
-        {/* Future: This will open a modal to issue a new gift card */}
-        <button className="bg-[#ae8231] hover:bg-[#b45309] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
-          + Issue Giftcard
-        </button>
-      </div>
+        {/* Title + Issue Giftcard Button */}
+        <div className="flex justify-between items-end">
+          <h1 className="font-serif text-4xl text-white italic tracking-wide">
+            Giftcard Center
+          </h1>
 
-      {/* -----------------------------------------------------------
-         Status Filter Pills
-         ----------------------------------------------------------- */}
-      <div className="flex gap-4 mb-8">
-        {/* Total issued */}
-        <div className="flex items-center gap-2 bg-[#C5A059] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
-          <span className="text-white text-[10px] font-bold tracking-widest uppercase">
-            Total Issued
-          </span>
-          <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
-            {giftcards.length}
-          </span>
+          {/* Future: This will open a modal to issue a new gift card */}
+          <button className="bg-[#ae8231] hover:bg-[#b45309] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
+            + Issue Giftcard
+          </button>
         </div>
 
-        {/* Active */}
-        <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
-          <span className="text-gray-400 text-[10px] tracking-widest uppercase">
-            Active
-          </span>
-        </div>
-
-        {/* Redeemed */}
-        <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
-          <span className="text-gray-400 text-[10px] tracking-widest uppercase">
-            Redeemed
-          </span>
-        </div>
-      </div>
-
-      {/* -----------------------------------------------------------
-         Data Table Container
-         ----------------------------------------------------------- */}
-      <div className="bg-[#141414] border border-white/5 rounded-xl p-6 min-h-[400px]">
-
-        {/* ================= Table Header ================= */}
-        <div className="flex text-[10px] tracking-widest text-gray-500 uppercase px-6 pb-4 border-b border-white/5 mb-4">
-          <div className="w-[30%]">Voucher Code & Recipient</div>
-          <div className="w-[15%]">Value</div>
-          <div className="w-[25%]">Validity Period</div>
-          <div className="w-[15%]">Status</div>
-          <div className="w-[15%] text-right">Actions</div>
-        </div>
-
-        {/* ================= Loading / Empty / Data States ================= */}
-        {loading ? (
-          <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
-            Retrieving Vault Records...
+        {/* Status Filter Pills */}
+        <div className="flex gap-4">
+          {/* Total issued */}
+          <div className="flex items-center gap-2 bg-[#C5A059] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
+            <span className="text-white text-[10px] font-bold tracking-widest uppercase">
+              Total Issued
+            </span>
+            <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
+              {giftcards.length}
+            </span>
           </div>
-        ) : giftcards.length === 0 ? (
-          <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
-            No giftcards issued yet.
+
+          {/* Active */}
+          <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
+            <span className="text-gray-400 text-[10px] tracking-widest uppercase">
+              Active
+            </span>
           </div>
-        ) : (
-          <div className="space-y-3">
-  {giftcards.map((card) => (
-    <div
-      key={card._id}
-      className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
-    >
 
-      {/* -----------------------------------------------------------
-         1. Gift Code & Recipient (30%)
-         ----------------------------------------------------------- */}
-      <div className="w-[30%] pr-4 flex items-center gap-4">
-
-        {/* Decorative giftcard icon */}
-        <div className="w-10 h-8 rounded bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] text-xs">
-          🎁
-        </div>
-
-        <div>
-          {/* Use the actual giftCode field from your database */}
-          <h3 className="text-white text-sm font-mono tracking-widest mb-1">
-            {card.giftCode || 'UNKNOWN CODE'}
-          </h3>
-
-          <p className="text-gray-600 text-[9px] tracking-widest uppercase">
-            TO: {card.recipientName || card.recipientEmail || 'Anonymous Guest'}
-          </p>
-        </div>
-      </div>
-
-      {/* -----------------------------------------------------------
-         2. Giftcard Value (15%)
-         ----------------------------------------------------------- */}
-      <div className="w-[15%]">
-        <p className="text-[#C5A059] text-lg font-serif italic tracking-wider">
-          €{card.amount || '0'}
-        </p>
-      </div>
-
-      {/* -----------------------------------------------------------
-         3. Validity Period (Created → No Expiry) (25%)
-         ----------------------------------------------------------- */}
-      <div className="w-[25%]">
-        <div className="flex items-center gap-2 mb-1">
-          {/* Use createdAt as the issue date */}
-          <span className="text-gray-400 text-[11px] tracking-wide font-mono">
-            {card.createdAt
-              ? new Date(card.createdAt).toLocaleDateString()
-              : '---'}
-          </span>
-
-          <span className="text-gray-600 text-[10px]">➔</span>
-
-          <span className="text-gray-400 text-[11px] tracking-wide font-mono">
-            No Expiry
-          </span>
-        </div>
-      </div>
-
-      {/* -----------------------------------------------------------
-         4. Status (15%)
-         ----------------------------------------------------------- */}
-      <div className="w-[15%]">
-        {card.status === 'Redeemed' ? (
-          <span className="border border-gray-600 text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase">
-            REDEEMED
-          </span>
-        ) : (
-          <span className="border border-[#10b981] text-[#10b981] bg-[#10b981]/10 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase">
-            {card.status ? card.status.toUpperCase() : 'ACTIVE'}
-          </span>
-        )}
-      </div>
-
-      {/* -----------------------------------------------------------
-         5. Action Buttons (15%)
-         ----------------------------------------------------------- */}
-      <div className="w-[15%] flex justify-end gap-4">
-
-        
-
-        {/* Void Giftcard */}
-        <button
-          className="flex flex-col items-center gap-1 group/btn"
-          title="Void Giftcard"
-        >
-          <div className="w-8 h-8 rounded-full border border-red-900/50 text-red-500/50 flex items-center justify-center group-hover/btn:border-red-500 group-hover/btn:text-red-500 transition-all">
-            ✕
+          {/* Redeemed */}
+          <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
+            <span className="text-gray-400 text-[10px] tracking-widest uppercase">
+              Redeemed
+            </span>
           </div>
-        </button>
+        </div>
 
       </div>
-    </div>
-  ))}
-</div>
 
-        )}
+      {/* ============================================================
+          SCROLLABLE DATA TABLE CONTAINER
+          ============================================================ */}
+      {/* 3. FLEX-1 & OVERFLOW-Y-AUTO: Takes remaining space and enables scrolling */}
+      <div className="bg-[#0f0f0f] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative">
+
+        {/* 4. STICKY HEADER: Stays at the top of the scrollable container. 
+             Added solid background color to hide scrolling items underneath */}
+        <div className="sticky top-0 z-10 bg-[#0f0f0f] flex text-[10px] tracking-widest text-gray-500 uppercase px-6 py-5 border-b border-white/5 shadow-md">
+          <div className="w-[30%] font-medium">Voucher Code & Recipient</div>
+          <div className="w-[15%] font-medium">Value</div>
+          <div className="w-[25%] font-medium">Validity Period</div>
+          <div className="w-[15%] font-medium">Status</div>
+          <div className="w-[15%] font-medium text-right">Actions</div>
+        </div>
+
+        {/* List Content Padding Wrapper */}
+        <div className="p-6">
+          {/* ================= Loading / Empty / Data States ================= */}
+          {loading ? (
+            <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
+              Retrieving Vault Records...
+            </div>
+          ) : giftcards.length === 0 ? (
+            <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
+              No giftcards issued yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {giftcards.map((card) => (
+                <div
+                  key={card._id}
+                  className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
+                >
+
+                  {/* -----------------------------------------------------------
+                     1. Gift Code & Recipient (30%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[30%] pr-4 flex items-center gap-4">
+
+                    {/* Decorative giftcard icon */}
+                    <div className="w-10 h-8 rounded bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] text-xs">
+                      🎁
+                    </div>
+
+                    <div>
+                      {/* Use the actual giftCode field from your database */}
+                      <h3 className="text-white text-sm font-mono tracking-widest mb-1">
+                        {card.giftCode || 'UNKNOWN CODE'}
+                      </h3>
+
+                      <p className="text-gray-600 text-[9px] tracking-widest uppercase">
+                        TO: {card.recipientName || card.recipientEmail || 'Anonymous Guest'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     2. Giftcard Value (15%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[15%]">
+                    <p className="text-[#C5A059] text-lg font-serif italic tracking-wider">
+                      €{card.amount || '0'}
+                    </p>
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     3. Validity Period (Created → No Expiry) (25%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[25%]">
+                    <div className="flex items-center gap-2 mb-1">
+                      {/* Use createdAt as the issue date */}
+                      <span className="text-gray-400 text-[11px] tracking-wide font-mono">
+                        {card.createdAt
+                          ? new Date(card.createdAt).toLocaleDateString()
+                          : '---'}
+                      </span>
+
+                      <span className="text-gray-600 text-[10px]">➔</span>
+
+                      <span className="text-gray-400 text-[11px] tracking-wide font-mono">
+                        No Expiry
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     4. Status (15%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[15%]">
+                    {card.status === 'Redeemed' ? (
+                      <span className="border border-gray-600 text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase">
+                        REDEEMED
+                      </span>
+                    ) : (
+                      <span className="border border-[#10b981] text-[#10b981] bg-[#10b981]/10 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase">
+                        {card.status ? card.status.toUpperCase() : 'ACTIVE'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* -----------------------------------------------------------
+                     5. Action Buttons (15%)
+                     ----------------------------------------------------------- */}
+                  <div className="w-[15%] flex justify-end gap-4">
+                    {/* Void Giftcard */}
+                    <button
+                      className="flex flex-col items-center gap-1 group/btn"
+                      title="Void Giftcard"
+                    >
+                      <div className="w-8 h-8 rounded-full border border-red-900/50 text-red-500/50 flex items-center justify-center group-hover/btn:border-red-500 group-hover/btn:text-red-500 transition-all">
+                        ✕
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -618,52 +675,77 @@ function MockLogsView() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /**
-   * Fetch all security logs when the component mounts.
-   * This endpoint is protected, so the staff JWT must be included
-   * in the Authorization header as a Bearer token.
-   */
+   /**
+       * -------------------------------------------------------------
+       * Sending the GET request
+       * -------------------------------------------------------------
+       * 1. No need to manually read the token from localStorage.
+       * 2. No need to manually set Authorization headers.
+       * 3. No need to specify withCredentials here, because it is
+       *    already configured globally in App.js.
+       */
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const token = localStorage.getItem('staffToken');
 
          // ！！！！！Send GET request to backend API ！！！！！
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/admin/manage/logs`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/admin/manage/logs`);
+           /**
+       * Axios automatically parses JSON responses.
+       * It only enters this block when the HTTP status is 2xx.
+       *
+       * Note:
+       * - Axios uses `response.data` as the response body.
+       * - Your backend returns `{ data: [...] }`, so the actual logs
+       *   are located at `response.data.data`.
+       */
+        setLogs(response.data.data);
+
+        } catch (error) {
+          /**
+       * -------------------------------------------------------------
+       * Error handling
+       * -------------------------------------------------------------
+       * If the session is invalid or the user is not authenticated,
+       * your auth middleware will return HTTP 401.
+       * Axios will automatically route that into this catch block.
+       */
+
+          if (error.response) {
+              if (error.response.status === 401) {
+                // If the session expires while the user is viewing gift cards,
+                // redirect them safely back to the login page:
+                  console.error('Unauthorized access - invalid session. Please log in again.');
+                  window.location.href = '/admin/login';
+              }
+              else{
+                  console.error('Failed to fetch logs:', error.response.data.message);
+              }
           }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setLogs(data.data);
-        } else {
-          console.error('Failed to fetch logs:', data.message);
+          else{
+              console.error('Network Error:', error);
+          }
+        } finally {
+           /**
+       * Regardless of success or failure, loading must be disabled
+       * so the UI can render either the data or an empty state.
+       */
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Network Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
+      
 
     fetchLogs();
   }, []);
 
   return (
-    <div className="animate-fadeIn">
+    <div className="animate-fadeIn h-full flex flex-col">
 
       {/* -----------------------------------------------------------
          Header Section
          ----------------------------------------------------------- */}
-      <div className="flex justify-between items-end mb-10">
+      <div className="flex justify-between items-end mb-10 shrink-0">
         <div>
           <h1 className="font-serif text-4xl text-white italic tracking-wide">
             Security Logs
@@ -685,11 +767,11 @@ function MockLogsView() {
       {/* -----------------------------------------------------------
          Logs Table Container
          ----------------------------------------------------------- */}
-      <div className="bg-[#0f0f0f] border border-white/5 rounded-xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-[#0f0f0f] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto">
+        <table className="w-full text-left border-collapse relative">
 
           {/* Table Header */}
-          <thead>
+          <thead className="sticky top-0 bg-[#0f0f0f] z-10 shadow-md">
             <tr className="bg-white/[0.02] text-[10px] tracking-widest text-gray-500 uppercase">
               <th className="px-8 py-5 font-medium">Timestamp</th>
               <th className="px-8 py-5 font-medium">Operator</th>
