@@ -19,7 +19,7 @@ const slides = [
   { src: g5 },
   { src: g6 }
 ];
-
+// Homepage gallery component with a cinematic slideshow effect.
 export default function Gallery() {
   // index → tracks the currently visible slide.
   // mounted → ensures animations only trigger after the component has mounted.

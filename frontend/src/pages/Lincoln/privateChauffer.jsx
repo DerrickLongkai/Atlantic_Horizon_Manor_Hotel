@@ -11,7 +11,7 @@ import helicopterImg from '../../images/Lincoln/Chauffeur/helicoptor.png'; // Ke
 import greetingsImg from '../../images/Lincoln/Chauffeur/greetings.jpg';
 
 export default function PrivateChauffer() {
-  
+
   // Auto-scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);

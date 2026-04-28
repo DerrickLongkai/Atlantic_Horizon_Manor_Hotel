@@ -126,8 +126,9 @@ export default function Introduction() {
                 {/* Decorative corner accents (top-left & bottom-right) */}
                 <div className="absolute top-0 left-0 w-12 h-12 border-t border-l border-amber-600/60 z-10 -translate-x-3 -translate-y-3" />
                 <div className="absolute bottom-0 right-0 w-12 h-12 border-b border-r border-amber-600/60 z-10 translate-x-3 translate-y-3" />
-
+                
                 {/* Image container */}
+                {/* Image zoom in on hover */}
                 <div className="overflow-hidden">
                   <img
                     src={f.img}

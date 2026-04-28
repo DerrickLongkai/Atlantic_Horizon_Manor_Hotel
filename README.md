@@ -1,4 +1,5 @@
 # Atlantic Horizon Manor - Management Portal
+##www.atlantichorizonmanor.com
 
 ![Atlantic Horizon Manor Homepage Screenshot](./image/homepage-screenshot.png)
 A luxury hotel management system built with the **MERN Stack** (MongoDB, Express, React, Node.js). This portal allows administrators to manage bookings, gift cards, and monitor system security.
@@ -13,7 +14,7 @@ A luxury hotel management system built with the **MERN Stack** (MongoDB, Express
 - **Frontend**: React.js, Tailwind CSS, Framer Motion (for animations).
 - **Backend**: Node.js, Express.js.
 - **Database**: MongoDB Atlas.
-- **Security**: JWT (JSON Web Tokens), Bcrypt encryption.
+- **Security**: Session-based authentication, Bcrypt encryption, Login audit logs.
 
 ## Installation & Setup
 
