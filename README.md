@@ -26,20 +26,25 @@ A luxury hotel management system built with the **MERN Stack** (MongoDB, Express
 
 Navigate to /backend.
 
-Run npm install.
+Run = npm install.
 
 Create a .env file with MONGO_URI, JWT_SECRET, and PORT=8888.
 
-Start server: node server.js.
+Start server = node server.js.
 
 3. **Frontend Setup**:
 
 Navigate to /frontend.
 
-Run npm install.
+Run = npm install.
 
 Create a .env file with REACT_APP_API_URL=http://localhost:8888/api.
 
-Start app: npm start.
+Start app = npm start.
+
+
+## **Contributions**
+Work are equally divided between three of us
+
 
 
