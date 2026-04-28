@@ -29,7 +29,7 @@ export default function AdminLogin() {
 
     try {
       // Send POST request to backend (port 8888)
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/admin/login`, credentials);
+      const response = await axios.post(`${process.env.API_BASE_URL}/admin/login`, credentials);
 
       // Axios automatically parses JSON into response.data
       const data = response.data;

@@ -64,7 +64,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try{
       // Send POST request to backend to destroy the session
-      await axios.post(`${process.env.REACT_APP_API_URL}/admin/logout`);
+      await axios.post(`${process.env.API_BASE_URL}/admin/logout`);
     } catch (error) {
       console.error('Error occurred while logging out:', error);
     } finally {
@@ -181,7 +181,7 @@ function MockBookingsView() {
         
         const response = await axios.get(
            // ！！！！！Send GET request to backend API ！！！！！
-          `${process.env.REACT_APP_API_URL}/admin/manage/bookings`);
+          `${process.env.API_BASE_URL}/admin/manage/bookings`);
            
           /**
            * Axios automatically parses JSON responses.
@@ -447,7 +447,7 @@ function MockGiftcardsView() {
       try {
          // ！！！！！Send GET request to backend API ！！！！！
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`);
+          `${process.env.API_BASE_URL}/admin/manage/giftcards`);
         
       /**
        * Axios automatically parses JSON and only reaches this block
@@ -690,7 +690,7 @@ function MockLogsView() {
 
          // ！！！！！Send GET request to backend API ！！！！！
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/admin/manage/logs`);
+          `${process.env.API_BASE_URL}/admin/manage/logs`);
            /**
        * Axios automatically parses JSON responses.
        * It only enters this block when the HTTP status is 2xx.

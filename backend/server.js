@@ -41,7 +41,7 @@ app.use(
 
 // Parse incoming JSON request bodies
 app.use(express.json());
-
+app.set('trust proxy', 1); // Trust the first proxy (if behind a reverse proxy like Nginx or Heroku)
 /**
  * -------------------------------------------------------------
  * Session Middleware
