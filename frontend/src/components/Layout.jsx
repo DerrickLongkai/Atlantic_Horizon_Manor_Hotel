@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import axios from 'axios';
 
 // Modals and Components
 import GiftCardModal from './GiftCardModal';
@@ -30,26 +31,33 @@ const Layout = () => {
   // !!! Cookie Request 
   const handleSaveCookiePreference = async (preference) => {
     try {
-       // ！！！！！Send POST request to backend API ！！！！！
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/cookies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          preference: preference,
-          userAgent: navigator.userAgent, // Track browser type
-          timestamp: new Date().toISOString()
-        }),
-      });
+  // 1. Send POST request to sync cookie preferences with the Database
+  // Axios automatically handles JSON stringification and Content-Type headers
+  const response = await axios.post(
+    `${process.env.REACT_APP_API_URL}/cookies`,
+    {
+      preference: preference,
+      userAgent: navigator.userAgent, // Captures browser/OS metadata for threat/usage analysis
+      timestamp: new Date().toISOString()
+    },
+    { withCredentials: true } // Ensures the session is linked to this preference
+  );
 
-      if (response.ok) {
-        // 2. Only if DB save is successful, save to localStorage to prevent re-popups
-        localStorage.setItem('manor_cookie_pref', preference);
-        console.log("Cookie preference synced with Database.");
-      }
-    } catch (error) {
-      console.error("Database connection failed:", error);
-    }
-    closeModal();
+  // 2. Axios only reaches this line if the status code is 2xx (Success)
+  // Save to localStorage only after successful DB confirmation
+  localStorage.setItem('manor_cookie_pref', preference);
+  console.log("Cookie preference successfully synced with Database.");
+
+} catch (error) {
+  // 3. Handle connection failures or server-side errors
+  console.error("Database sync failed:", error.response?.data?.message || error.message);
+  
+  // Note: We don't alert the user here because cookie consent 
+  // should be a seamless, non-intrusive background process.
+} finally {
+  // 4. Always close the modal regardless of success or failure
+  closeModal();
+}
   };
 
   // Check if user has already set preferences on page load

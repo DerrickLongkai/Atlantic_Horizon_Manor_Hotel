@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
+import axios from 'axios';
 import privateImg from '../images/George/Superior(1)/view.png';
 import premiumImg from '../images/George/premium(2)/view4.avif';
 import exclusivityImg from '../images/George/ultimate(3)/bed.avif';
@@ -125,37 +125,40 @@ const handleConfirm = async () => {
   //console.log("FRONTEND PAYLOAD TO SEND:", payload); // Look at browser console
 
   try {
-     // ！！！！！Send POST request to backend API ！！！！！
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/bookings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
+  // 1. Mark the submission process as active (assumed to be set to true at the start of the function)
+  setIsSubmitting(true);
 
-    // 4. Parse response data from backend
-    const data = await response.json();
+  // 2. Send the POST request
+  // Note: Axios automatically handles JSON serialization, so no need for JSON.stringify.
+  // { withCredentials: true } ensures session consistency, even for unauthenticated users.
+  const response = await axios.post(
+    `${process.env.REACT_APP_API_URL}/bookings`,
+    payload,
+    { withCredentials: true }
+  );
 
-    // 5. Check if request was successful
-    if (response.ok) {
-      setIsSuccess(true);
-      // Success: show confirmation, log backend response, then redirect to homepage
-      console.log("Success! Backend Response:", data);
-      //navigate('/'); 
-    } else {
-      // Backend returned an error (e.g., missing required fields)
-      throw new Error(data.message || "Failed to process booking.");
-    }
+  // 3. Handle a successful response
+  // Axios provides the parsed JSON directly in response.data.
+  setIsSuccess(true);
+  console.log("Success! Backend Response:", response.data);
 
-  } catch (error) {
-    // 6. Catch network errors or server failures
-    console.error("Booking Error:", error);
-    alert("Sorry, there was an issue processing your booking. Please try again.");
-  } finally {
-    // 7. Always stop loading state (whether success or failure)
-    setIsSubmitting(false);
-  }
+  // If navigation is required, uncomment the line below:
+  // navigate('/');
+
+} catch (error) {
+  // 4. Capture all errors (network issues or backend 4xx/5xx responses)
+  console.error("Booking Error:", error);
+
+  // Attempt to extract a detailed error message from the backend
+  const errorMessage = error.response?.data?.message || "Failed to process booking.";
+
+  alert(`Sorry, there was an issue: ${errorMessage}`);
+
+} finally {
+  // 5. Stop the loading state regardless of success or failure
+  setIsSubmitting(false);
+}
+
 };
   // Handle form input changes for the Guest Info step
   const handleInputChange = (e) => {

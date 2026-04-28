@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import axios from 'axios';
 export default function SelfCheckIn() {
   // Store user input (name + email)
   const [searchData, setSearchData] = useState({ name: '', email: '' });
@@ -34,33 +34,35 @@ export default function SelfCheckIn() {
 
 
     try {
-      // ！！！！！Send POST request to backend API ！！！！！
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/bookings/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // 1. Start loading state
+      setLoading(true);
+      setError(null);
 
-        // Send search input (name + email)
-        body: JSON.stringify(searchData)
-      });
+    // 2. Send POST request to search for a booking
+    // Axios automatically stringifies the body and sets Content-Type to application/json
+    const response = await axios.post(
+    `${process.env.REACT_APP_API_URL}/bookings/search`,
+    searchData,
+    { withCredentials: true } // Keeps session consistency across your hotel app
+  );
 
-      // Parse response from backend
-      const data = await response.json();
+  // 3. If successful, Axios puts the backend JSON data inside response.data
+  setResult(response.data.booking);
 
-      // If successful → store booking result
-      if (response.ok) {
-        setResult(data.booking);
-      } else {
-        // Backend returned error (e.g. no matching booking)
-        setError(data.message);
-      }
+} catch (err) {
+  // 4. Handle errors (both backend 4xx/5xx responses and network failures)
+  console.error("Search Error:", err);
 
-    } catch (err) {
-      // Handle network or server failure
-      setError('Connection failed. Please try again.');
-    } finally {
-      // Always stop loading state
-      setLoading(false);
-    }
+  // Extract custom error message from backend if it exists
+  const backendMessage = err.response?.data?.message;
+  
+  setError(backendMessage || 'Connection failed. Please try again.');
+  setResult(null); // Clear previous results on error
+
+} finally {
+  // 5. Always stop the loading spinner
+  setLoading(false);
+}
   };
 
   // 2. RENDER: Show a clean success screen after check-in

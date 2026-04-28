@@ -42,6 +42,8 @@ function App() {
             ========================================= */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="booking" element={<Booking />} />
+        <Route path="self-checkin" element={<SelfCheckIn />} />
 
         {/* =========================================
             CLIENT ROUTES (Wrapped with Layout: Header + Footer)
@@ -50,8 +52,7 @@ function App() {
 
           {/* Default homepage */}
           <Route index element={<Home />} />
-          <Route path="booking" element={<Booking />} />
-          <Route path="self-checkin" element={<SelfCheckIn />} />
+          
 
           {/* Experience routes – Lincoln */}
           <Route path="michelineQualityFood" element={<MichelinFood />} />

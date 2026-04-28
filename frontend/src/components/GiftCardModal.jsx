@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 export default function GiftCardModal({ isOpen, onClose }) {
   const [step, setStep] = useState('form');
@@ -38,28 +39,36 @@ export default function GiftCardModal({ isOpen, onClose }) {
     setIsSubmitting(true);
 
     try {
-       // ！！！！！Send POST request to backend API ！！！！！
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/giftcards`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData), // send formData directly
-      });
+  // 1. Start the submission loading state
+  setIsSubmitting(true);
 
-      const data = await response.json();
+  // 2. Send POST request to create the gift card
+  // Axios automatically stringifies formData and sets the correct headers
+  const response = await axios.post(
+    `${process.env.REACT_APP_API_URL}/giftcards`,
+    formData,
+    { withCredentials: true } // REQUIRED: Sends the session cookie for RBAC check
+  );
 
-      if (response.ok && data.success) {
-        // Retrieve giftCode from backend response
-        setGiftCode(data.giftCode);
-        setStep('success');
-      } else {
-        alert(`Submission Failed: ${data.message}`);
-      }
-    } catch (err) {
-      console.error("Connection Error:", err);
-      alert("Could not connect to the server.");
-    } finally {
-      setIsSubmitting(false);
-    }
+  // 3. Handle success
+  // Axios considers any 2xx status code a success
+  const { giftCode } = response.data;
+  setGiftCode(giftCode);
+  setStep('success');
+
+} catch (err) {
+  // 4. Handle errors (401 Unauthorized, 403 Forbidden, or 500 Server Error)
+  console.error("Giftcard Submission Error:", err);
+
+  // Extract specific error message sent by your Express backend
+  const errorMessage = err.response?.data?.message || "Could not connect to the server.";
+  
+  alert(`Submission Failed: ${errorMessage}`);
+
+} finally {
+  // 5. Always stop the loading state
+  setIsSubmitting(false);
+}
   };
 
   return (
