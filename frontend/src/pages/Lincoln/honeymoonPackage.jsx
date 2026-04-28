@@ -31,7 +31,7 @@ export default function HoneymoonPackage() {
            <div className="flex items-center justify-center gap-4 mb-8">
              <div className="h-[1px] w-12 bg-amber-500/50"></div>
              <span className="text-amber-500 uppercase tracking-[0.5em] text-[10px] md:text-xs font-black drop-shadow-md">
-               Lincoln Curated Romance
+               Atlantic Curated Romance
              </span>
              <div className="h-[1px] w-12 bg-amber-500/50"></div>
            </div>

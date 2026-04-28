@@ -21,6 +21,7 @@ const staffSchema = new mongoose.Schema({
 });
 
 // 密码验证方法
+// Password verification method
 staffSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
