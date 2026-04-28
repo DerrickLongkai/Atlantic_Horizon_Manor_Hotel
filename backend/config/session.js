@@ -29,8 +29,8 @@ module.exports = () => {
     cookie: {       
       maxAge: 1000 * 60 * 60 * 24 * 10, // Session lifetime: 10 days (in milliseconds)
       httpOnly: true,                   // Protects the cookie from being accessed by client-side JavaScript (mitigates XSS)
-      secure: true, // Only send cookies over HTTPS in production
-      sameSite: 'none'                   // Helps defend against CSRF while maintaining usability
+      secure: process.env.NODE_ENV === 'production', // Only send cookies over HTTPS in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Helps defend against CSRF while maintaining usability
     }
   };
 
