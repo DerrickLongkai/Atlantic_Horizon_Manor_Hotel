@@ -164,58 +164,45 @@ export default function AdminDashboard() {
 // ===============================================================
 // Bookings View Component (Fetches and displays real booking data)
 // ===============================================================
+
+
 function MockBookingsView() {
+  // -------------------------------------------------------------
+  // Define colors and labels corresponding to states (matching your dark gold style)
+  // -------------------------------------------------------------
+  const STATUS_STYLES = {
+    PENDING: { border: 'border-gray-500', text: 'text-gray-400', bg: 'bg-gray-500/10', label: 'PENDING' },
+    CONFIRMED: { border: 'border-[#f59e0b]', text: 'text-[#f59e0b]', bg: 'bg-[#f59e0b]/10', label: 'CONFIRMED' },
+    CHECKED_IN: { border: 'border-emerald-500', text: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'CHECKED IN' },
+    CHECKED_OUT: { border: 'border-purple-500', text: 'text-purple-500', bg: 'bg-purple-500/10', label: 'CHECKED OUT' },
+    COMPLETED: { border: 'border-[#4A6482]', text: 'text-[#4A6482]', bg: 'bg-[#4A6482]/10', label: 'COMPLETED' },
+  };
+
+  // Predefined list of states, used to generate filter Tabs
+  const FILTER_TABS = ['ALL', 'PENDING', 'CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'];
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('ALL');
 
-  /**
-   * Fetch all bookings from the backend when the component mounts.
-   * Sending the GET request to the protected endpoint that returns real booking data.
-   * The global axios configuration in App.js automatically
-   * attaches the session cookie to every request, so there is
-   * no need to manually read tokens or set headers here.
-   */
+  // Data fetching logic
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        
-        const response = await axios.get(
-           // ！！！！！Send GET request to backend API ！！！！！
-          `${process.env.REACT_APP_API_URL}/admin/manage/bookings`);
-           
-          /**
-           * Axios automatically parses JSON responses.
-           * Your backend returns `{ data: [...] }`, so the actual booking
-           * list is located at `response.data.data`.
-           */
-          setBookings(response.data.data);
-
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/admin/manage/bookings`);
+        setBookings(response.data.data);
       } catch (error) {
-      /**
-       * -------------------------------------------------------------
-       * Centralized 401 handling
-       * -------------------------------------------------------------
-       * In a session-based authentication system, login state is
-       * determined entirely by HTTP status codes.
-       */
-          if (error.response) {
-              if (error.response.status === 401) {
-                  console.error('Unauthorized access - invalid session. Please log in again.');
-                  // When the session expires, redirect the user safely:
-                  window.location.href = '/admin/login';
-              }
-              else{
-                  console.error('Failed to fetch bookings:', error.response.data.message);
-              }
+        if (error.response) {
+          if (error.response.status === 401) {
+            console.error('Unauthorized access - invalid session. Please log in again.');
+            window.location.href = '/admin/login';
+          } else {
+            console.error('Failed to fetch bookings:', error.response.data.message);
           }
-          else{
-              console.error('Network request error:', error);
-          }
+        } else {
+          console.error('Network request error:', error);
+        }
       } finally {
-      /**
-       * Regardless of success or failure, loading must be disabled
-       * so the UI can render either the data or an empty state.
-       */
         setLoading(false);
       }
     };
@@ -223,30 +210,116 @@ function MockBookingsView() {
     fetchBookings();
   }, []);
 
-  /**
-   * Format room type names into luxury‑styled labels.
-   * Ensures consistent branding across the admin UI.
-   */
+  // Format room types
   const formatRoomType = (type) => {
     if (!type) return 'Standard Suite';
-
     const mapping = {
       lodge: 'Private Lodge',
       exclusivity: 'Ultimate Exclusivity',
       residence: 'The Sovereign Mansion',
     };
-
     return mapping[type.toLowerCase()] || type;
   };
 
+  // Standardize backend Status strings to ensure they match STATUS_STYLES keys
+  const getNormalizedStatus = (statusStr) => {
+    if (!statusStr) return 'PENDING';
+    return statusStr.toUpperCase().replace(' ', '_'); // e.g., "Checked In" -> "CHECKED_IN"
+  };
+
+  //  UPDATED: Handle status changes with live backend connection & UI rollback
+  const handleStatusChange = async (bookingId, newStatus) => {
+    // 0. Save the current state in case the server request fails
+    const previousBookings = [...bookings];
+
+    // 1. Optimistic Update: Update frontend immediately to make it feel instantaneous
+    setBookings(prevBookings =>
+      prevBookings.map(booking =>
+        booking._id === bookingId ? { ...booking, status: newStatus } : booking
+      )
+    );
+
+    // 2. Send request to backend to update the database
+    try {
+      await axios.patch(`${process.env.REACT_APP_API_URL}/admin/manage/bookings/${bookingId}/status`, {
+        status: newStatus
+      });
+      // Success! Database is updated. The UI is already showing the new status.
+    } catch (error) {
+      console.error("Failed to update status on the server", error);
+      
+      // 3. Rollback: If the server failed, revert the UI back to how it was
+      setBookings(previousBookings);
+      
+      // Alert the admin so they know the action didn't actually save
+      alert("System error: Failed to update booking status in the database.");
+    }
+  };
+
+  // Filter displayed data based on current activeFilter
+  const filteredBookings = bookings.filter(b => {
+    if (activeFilter === 'ALL') return true;
+    return getNormalizedStatus(b.status) === activeFilter;
+  });
+
+  // Dynamically render action buttons
+  const renderActions = (booking) => {
+    const currentStatus = getNormalizedStatus(booking.status);
+
+    switch (currentStatus) {
+      case 'PENDING':
+        return (
+          <>
+            <button onClick={() => handleStatusChange(booking._id, 'CONFIRMED')} className="flex flex-col items-center gap-1 group/btn">
+              <div className="w-8 h-8 rounded-full bg-[#f59e0b] flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform shadow-lg shadow-orange-900/20">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <span className="text-[#f59e0b] text-[8px] tracking-[0.2em] uppercase font-bold">Confirm</span>
+            </button>
+          </>
+        );
+      case 'CONFIRMED':
+        return (
+          <button onClick={() => handleStatusChange(booking._id, 'CHECKED_IN')} className="flex flex-col items-center gap-1 group/btn">
+             <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform shadow-lg shadow-emerald-900/20">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+              </div>
+              <span className="text-emerald-500 text-[8px] tracking-[0.2em] uppercase font-bold">Check In</span>
+          </button>
+        );
+      case 'CHECKED_IN':
+        return (
+          <button onClick={() => handleStatusChange(booking._id, 'CHECKED_OUT')} className="flex flex-col items-center gap-1 group/btn">
+             <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform shadow-lg shadow-purple-900/20">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              </div>
+              <span className="text-purple-400 text-[8px] tracking-[0.2em] uppercase font-bold">Check Out</span>
+          </button>
+        );
+      case 'CHECKED_OUT':
+        return (
+          <button onClick={() => handleStatusChange(booking._id, 'COMPLETED')} className="flex flex-col items-center gap-1 group/btn">
+             <div className="w-8 h-8 rounded-full bg-[#4A6482] flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <span className="text-[#4A6482] text-[8px] tracking-[0.2em] uppercase font-bold">Complete</span>
+          </button>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="text-[10px] tracking-widest text-gray-500 uppercase italic">Archived</span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    // 1. OUTER CONTAINER: Takes full height, enables vertical flex
     <div className="animate-fadeIn h-full flex flex-col">
 
       {/* ============================================================
-          FIXED HEADER SECTION (Title, Buttons, Filters)
+          FIXED HEADER SECTION
           ============================================================ */}
-      {/* 2. SHRINK-0: Prevents this block from squeezing. Groups title and filters together. */}
       <div className="shrink-0 flex flex-col gap-6 mb-8">
 
         {/* Title + Create Booking Button */}
@@ -254,171 +327,135 @@ function MockBookingsView() {
           <h1 className="font-serif text-4xl text-white italic tracking-wide">
             Manage Booking
           </h1>
-
-          {/* Future: This will open a booking creation modal or page */}
           <button className="bg-[#c9830a] hover:bg-[#d97706] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
             + Create Booking
           </button>
         </div>
 
-        {/* Status Filter Pills (currently only "All Bookings") */}
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 bg-[#dc8c02] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
-            <span className="text-white text-[10px] font-bold tracking-widest uppercase">
-              All Bookings
-            </span>
-            <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
-              {bookings.length}
-            </span>
-          </div>
-        </div>
+        {/* Dynamic Status Filter Pills */}
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {FILTER_TABS.map(filter => {
+            const isActive = activeFilter === filter;
+            const count = filter === 'ALL' 
+              ? bookings.length 
+              : bookings.filter(b => getNormalizedStatus(b.status) === filter).length;
 
+            return (
+              <div 
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all duration-300 ${
+                  isActive 
+                    ? 'bg-[#dc8c02] shadow-lg shadow-orange-900/20' 
+                    : 'bg-[#1a1a1a] hover:bg-[#252525] border border-white/5'
+                }`}
+              >
+                <span className={`text-[10px] font-bold tracking-widest uppercase ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                  {filter.replace('_', ' ')}
+                </span>
+                <span className={`${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-500'} text-[10px] px-2 py-0.5 rounded-full`}>
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ============================================================
           SCROLLABLE DATA TABLE CONTAINER
           ============================================================ */}
-      {/* 3. FLEX-1 & OVERFLOW-Y-AUTO: Takes remaining space and enables scrolling */}
-      <div className="bg-[#141414] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative">
+      <div className="bg-[#141414] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative scrollbar-hide">
 
-        {/* 4. STICKY HEADER: Stays at the top of the scrollable container. 
-             Matches the background color to hide scrolling items underneath. */}
+        {/* STICKY HEADER */}
         <div className="sticky top-0 z-10 bg-[#141414] flex text-[10px] tracking-widest text-gray-500 uppercase px-6 py-5 border-b border-white/5 shadow-md">
           <div className="w-[20%] font-medium">Resident</div>
           <div className="w-[20%] font-medium">Department/Tier</div>
           <div className="w-[25%] font-medium">Dates</div>
           <div className="w-[10%] font-medium">Price</div>
-          <div className="w-[10%] font-medium">Status</div>
+          <div className="w-[10%] font-medium text-center">Status</div>
           <div className="w-[15%] font-medium text-right">Actions</div>
         </div>
 
-        {/* List Content Padding Wrapper */}
+        {/* List Content */}
         <div className="p-6">
-          {/* ================= Loading / Empty / Data States ================= */}
           {loading ? (
             <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
               Decrypting Classified Data...
             </div>
-          ) : bookings.length === 0 ? (
+          ) : filteredBookings.length === 0 ? ( 
             <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
-              No bookings found in the estate.
+              No bookings found in this status.
             </div>
           ) : (
             <div className="space-y-3">
-              {bookings.map((booking) => (
-                <div
-                  key={booking._id}
-                  className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
-                >
+              {filteredBookings.map((booking) => { 
+                const normalizedStatus = getNormalizedStatus(booking.status);
+                // If backend sends an unrecognized status, apply default PENDING styles
+                const styleObj = STATUS_STYLES[normalizedStatus] || STATUS_STYLES['PENDING'];
 
-                  {/* -----------------------------------------------------------
-                     1. Guest Information (20%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[20%] pr-4">
-                    <h3 className="text-white text-base font-serif tracking-wide mb-1 truncate">
-                      {booking.guestInfo?.firstName ||
-                        booking.guestInfo?.name ||
-                        'Unknown'}{' '}
-                      {booking.guestInfo?.lastName || ''}
-                    </h3>
-                    <p className="text-gray-600 text-[9px] tracking-widest uppercase">
-                      ATL-{booking._id.substring(booking._id.length - 6)}
-                    </p>
-                  </div>
+                return (
+                  <div
+                    key={booking._id}
+                    className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
+                  >
+                    {/* 1. Guest Information */}
+                    <div className="w-[20%] pr-4">
+                      <h3 className="text-white text-base font-serif tracking-wide mb-1 truncate">
+                        {booking.guestInfo?.firstName || booking.guestInfo?.name || 'Unknown'} {booking.guestInfo?.lastName || ''}
+                      </h3>
+                      <p className="text-gray-600 text-[9px] tracking-widest uppercase">
+                        ATL-{booking._id.substring(booking._id.length - 6)}
+                      </p>
+                    </div>
 
-                  {/* -----------------------------------------------------------
-                     2. Room Type (20%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[20%]">
-                    <p className="text-gray-300 text-sm tracking-wide">
-                      {formatRoomType(booking.roomType)}
-                    </p>
-                  </div>
+                    {/* 2. Room Type */}
+                    <div className="w-[20%]">
+                      <p className="text-gray-300 text-sm tracking-wide">
+                        {formatRoomType(booking.roomType)}
+                      </p>
+                    </div>
 
-                  {/* -----------------------------------------------------------
-                     3. Date Range + Nights (25%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[25%]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-300 text-[13px] tracking-wide">
-                        {booking.checkIn
-                          ? new Date(booking.checkIn).toLocaleDateString()
-                          : 'TBD'}
-                      </span>
-                      <span className="text-gray-600 text-[10px]">➔</span>
-                      <span className="text-gray-300 text-[13px] tracking-wide">
-                        {booking.checkOut
-                          ? new Date(booking.checkOut).toLocaleDateString()
-                          : 'TBD'}
+                    {/* 3. Date Range + Nights */}
+                    <div className="w-[25%]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-gray-300 text-[13px] tracking-wide">
+                          {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString() : 'TBD'}
+                        </span>
+                        <span className="text-gray-600 text-[10px]">➔</span>
+                        <span className="text-gray-300 text-[13px] tracking-wide">
+                          {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString() : 'TBD'}
+                        </span>
+                      </div>
+                      <span className="inline-block bg-white/5 text-gray-400 text-[9px] px-2 py-0.5 rounded uppercase tracking-widest">
+                        {booking.totalNights ? `${booking.totalNights} NIGHTS` : 'N/A NIGHTS'}
                       </span>
                     </div>
 
-                    <span className="inline-block bg-white/5 text-gray-400 text-[9px] px-2 py-0.5 rounded uppercase tracking-widest">
-                      {booking.totalNights
-                        ? `${booking.totalNights} NIGHTS`
-                        : 'N/A NIGHTS'}
-                    </span>
-                  </div>
-
-                  {/* -----------------------------------------------------------
-                     4. Price + Payment Status (10%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[10%]">
-                    <p className="text-[#f59e0b] text-sm font-bold tracking-wider mb-1">
-                      €{booking.price || 'TBD'}
-                    </p>
-                    <span className="text-gray-600 text-[9px] tracking-widest uppercase">
-                      {booking.paymentStatus === 'Paid' ? 'PAID' : 'UNPAID'}
-                    </span>
-                  </div>
-
-                  {/* -----------------------------------------------------------
-                     5. Booking Status (10%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[10%]">
-                    <span className="border border-[#4A6482] text-[#4A6482] bg-[#4A6482]/10 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase shadow-sm whitespace-nowrap">
-                      {booking.status || 'PENDING'}
-                    </span>
-                  </div>
-
-                  {/* -----------------------------------------------------------
-                     6. Action Buttons (15%)
-                     ----------------------------------------------------------- */}
-                  <div className="w-[15%] flex justify-end gap-3">
-
-                    {/* Confirm */}
-                    <button className="flex flex-col items-center gap-1 group/btn">
-                      <div className="w-8 h-8 rounded-full bg-[#f59e0b] flex items-center justify-center text-white group-hover/btn:scale-110 transition-transform">
-                        ✓
-                      </div>
-                      <span className="text-[#f59e0b] text-[8px] tracking-[0.2em] uppercase">
-                        Confirm
+                    {/* 4. Price + Payment Status */}
+                    <div className="w-[10%]">
+                      <p className="text-[#f59e0b] text-sm font-bold tracking-wider mb-1">
+                        €{booking.price || 'TBD'}
+                      </p>
+                      <span className={`text-[9px] tracking-widest uppercase font-bold ${booking.paymentStatus === 'Paid' ? 'text-emerald-500' : 'text-gray-600'}`}>
+                        {booking.paymentStatus === 'Paid' ? 'PAID' : 'UNPAID'}
                       </span>
-                    </button>
+                    </div>
 
-                    {/* Edit */}
-                    <button className="flex flex-col items-center gap-1 group/btn">
-                      <div className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 flex items-center justify-center group-hover/btn:border-white group-hover/btn:text-white transition-all">
-                        ✎
-                      </div>
-                      <span className="text-gray-500 text-[8px] tracking-[0.2em] uppercase group-hover/btn:text-gray-300">
-                        Edit
+                    {/* 5. Booking Status (Dynamic styles) */}
+                    <div className="w-[10%] flex justify-center">
+                      <span className={`border ${styleObj.border} ${styleObj.text} ${styleObj.bg} px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase shadow-sm whitespace-nowrap`}>
+                        {styleObj.label}
                       </span>
-                    </button>
+                    </div>
 
-                    {/* Refund */}
-                    <button className="flex flex-col items-center gap-1 group/btn">
-                      <div className="w-8 h-8 rounded-full border border-red-900 text-red-500 flex items-center justify-center group-hover/btn:bg-red-900/20 transition-all">
-                        ⟲
-                      </div>
-                      <span className="text-red-500/70 text-[8px] tracking-[0.2em] uppercase">
-                        Refund
-                      </span>
-                    </button>
-
+                    {/* 6. Action Buttons (Dynamic buttons) */}
+                    <div className="w-[15%] flex justify-end gap-3">
+                      {renderActions(booking)}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -426,6 +463,7 @@ function MockBookingsView() {
     </div>
   );
 }
+
 
 // ===============================================================
 // Giftcards View Component (Fetches and displays issued gift cards)

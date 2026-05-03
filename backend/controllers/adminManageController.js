@@ -119,9 +119,47 @@ const getAllLogs = async (req, res) => {
   }
 };
 
+// @desc    Update the status of a booking
+// @route   PATCH /api/admin/manage/bookings/:id/status
+const updateBookingStatus = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const newStatus = req.body.status; 
+
+   
+    const validStatuses = ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'];
+    if (!validStatuses.includes(newStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid status provided.' });
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status: newStatus },
+      { new: true } 
+    );
+
+    
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, message: 'Booking not found.' });
+    }
+
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Status updated successfully', 
+      data: updatedBooking 
+    });
+
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
 // Export controller functions for use in admin routes
 module.exports = {
   getAllBookings,
   getAllGiftcards,
-  getAllLogs
+  getAllLogs,
+  updateBookingStatus,
 };

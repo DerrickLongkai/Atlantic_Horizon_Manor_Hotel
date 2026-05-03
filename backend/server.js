@@ -71,11 +71,11 @@ app.use((req, res, next) => {
  * -------------------------------------------------------------
  * All API routes are organized by feature domain for clarity.
  */
+app.use('/api/admin/manage', require('./routes/adminManageRoutes'));
 app.use('/api/giftcards', require('./routes/giftcardRoutes'));
 app.use('/api/cookies', require('./routes/cookieRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/admin', require('./routes/adminLoginRoutes'));
-app.use('/api/admin/manage', require('./routes/adminManageRoutes'));
 
 // Server Port
 const PORT = process.env.PORT || 8888;

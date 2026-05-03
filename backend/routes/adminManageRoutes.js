@@ -10,7 +10,8 @@ const authorizeRoles = require('../middleware/roleMiddleware');
 const { 
   getAllBookings, 
   getAllGiftcards, 
-  getAllLogs 
+  getAllLogs,
+  updateBookingStatus
 } = require('../controllers/adminManageController');
 
 /**
@@ -23,9 +24,16 @@ router.get(
   authorizeRoles('staff', 'manager', 'boss'),
   getAllBookings
 );
+// 2 update booking status endpoint (e.g., pending -> checked_in, checked_in -> checked_out, etc.)
+router.patch(
+  '/bookings/:id/status',
+  protectAdmin,
+  authorizeRoles('staff', 'manager', 'boss'),
+  updateBookingStatus
+);
 
 /**
- * 2. GIFTCARD MANAGEMENT
+ *3. GIFTCARD MANAGEMENT
  * Access: manager, boss only
  */
 router.get(
@@ -45,6 +53,9 @@ router.get(
   authorizeRoles('boss'),
   getAllLogs
 );
+
+
+
 
 module.exports = router;
 
