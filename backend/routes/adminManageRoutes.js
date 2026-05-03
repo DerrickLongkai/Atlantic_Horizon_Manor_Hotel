@@ -11,7 +11,8 @@ const {
   getAllBookings, 
   getAllGiftcards, 
   getAllLogs,
-  updateBookingStatus
+  updateBookingStatus,
+  updateGiftcardStatus
 } = require('../controllers/adminManageController');
 
 /**
@@ -44,7 +45,7 @@ router.get(
 );
 
 /**
- * 3. SECURITY LOG MANAGEMENT
+ * 4. SECURITY LOG MANAGEMENT
  * Access: boss only
  */
 router.get(
@@ -54,6 +55,16 @@ router.get(
   getAllLogs
 );
 
+/**
+ * 5. GIFTCARD STATUS UPDATE
+ * Access: manager, boss only
+ */
+router.patch(
+  '/giftcards/:id/status',
+  protectAdmin,
+  authorizeRoles('manager', 'boss'),
+  updateGiftcardStatus
+);
 
 
 

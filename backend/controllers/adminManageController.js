@@ -156,10 +156,62 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+/**
+ * Update gift card status (e.g., Active -> Redeemed)
+ */
+const updateGiftcardStatus = async (req, res) => {
+  try {
+    // 1. Extract card ID from URL and new status from request body
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // 2. Status whitelist validation (for security, to prevent invalid statuses from the frontend)
+    const validStatuses = ['Active', 'Redeemed', 'Voided'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid status provided.' 
+      });
+    }
+
+    // 3. Find and update in the database
+    // The { new: true } option tells Mongoose to return the updated document, not the old one
+    const updatedCard = await Giftcard.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true } 
+    );
+
+    // 4. If the card is not found
+    if (!updatedCard) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Giftcard not found in vault.' 
+      });
+    }
+
+    // 5. Return success response
+    console.log(`>>> [GIFTCARD] Status updated: ${updatedCard.giftCode} -> ${status}`);
+    return res.status(200).json({
+      success: true,
+      message: `Giftcard successfully marked as ${status}.`,
+      data: updatedCard
+    });
+
+  } catch (error) {
+    console.error('>>> [ERROR] Updating giftcard status:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server Error: Could not update giftcard status.' 
+    });
+  }
+};
+
 // Export controller functions for use in admin routes
 module.exports = {
   getAllBookings,
   getAllGiftcards,
+  updateGiftcardStatus,
   getAllLogs,
   updateBookingStatus,
 };

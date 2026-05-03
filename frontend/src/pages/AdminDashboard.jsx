@@ -216,7 +216,7 @@ function MockBookingsView() {
     const mapping = {
       lodge: 'Private Lodge',
       exclusivity: 'Ultimate Exclusivity',
-      residence: 'The Sovereign Mansion',
+      residence: 'Private Residence',
     };
     return mapping[type.toLowerCase()] || type;
   };
@@ -369,8 +369,8 @@ function MockBookingsView() {
 
         {/* STICKY HEADER */}
         <div className="sticky top-0 z-10 bg-[#141414] flex text-[10px] tracking-widest text-gray-500 uppercase px-6 py-5 border-b border-white/5 shadow-md">
-          <div className="w-[20%] font-medium">Resident</div>
-          <div className="w-[20%] font-medium">Department/Tier</div>
+          <div className="w-[20%] font-medium">Guest</div>
+          <div className="w-[20%] font-medium">Room Type</div>
           <div className="w-[25%] font-medium">Dates</div>
           <div className="w-[10%] font-medium">Price</div>
           <div className="w-[10%] font-medium text-center">Status</div>
@@ -471,58 +471,33 @@ function MockBookingsView() {
 function MockGiftcardsView() {
   const [giftcards, setGiftcards] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Tracks which filter tab is currently selected.
+  const [filter, setFilter] = useState('ALL');
 
-      /**
-       * -------------------------------------------------------------
-       * Sending the GET request
-       * -------------------------------------------------------------
-       * No need to manually read the token, set headers, or specify
-       * withCredentials. Your global axios configuration in App.js
-       * already attaches the session cookie to every request.
-       */
+  // State to control the "Redeem Confirmation Modal"
+  const [cardToRedeem, setCardToRedeem] = useState(null);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+
   useEffect(() => {
     const fetchGiftcards = async () => {
       try {
-         // ！！！！！Send GET request to backend API ！！！！！
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`);
-        
-      /**
-       * Axios automatically parses JSON and only reaches this block
-       * when the HTTP status code is within the 2xx range.
-       *
-       * Your backend returns `{ data: [...] }`, so the actual list of
-       * gift cards is located at `response.data.data`.
-       */
+          `${process.env.REACT_APP_API_URL}/admin/manage/giftcards`
+        );
         setGiftcards(response.data.data);
       } catch (error) {
-        /**
-        * -------------------------------------------------------------
-        * Error handling
-        * -------------------------------------------------------------
-        * In a session-based authentication model, login state is
-        * determined entirely by HTTP status codes.
-        */
-          if (error.response) {
-              if (error.response.status === 401) {
-                // If the session expires while the user is viewing gift cards,
-                // redirect them safely back to the login page:
-                  console.error('Unauthorized access - invalid session. Please log in again.');
-                  window.location.href = '/admin/login';
-              }
-              else{
-                  console.error('Failed to fetch giftcards:', error.response.data.message);
-              }
+        if (error.response) {
+          if (error.response.status === 401) {
+            console.error('Unauthorized access - invalid session. Redirecting to login.');
+            window.location.href = '/admin/login';
+          } else {
+            console.error('Failed to fetch giftcards:', error.response.data.message);
           }
-          else{
-              console.error('Network request error:', error);
-          }
-        
+        } else {
+          console.error('Network request error:', error);
+        }
       } finally {
-      /**
-       * Regardless of success or failure, loading must be disabled
-       * so the UI can render either the data or an empty state.
-       */
         setLoading(false);
       }
     };
@@ -530,33 +505,71 @@ function MockGiftcardsView() {
     fetchGiftcards();
   }, []);
 
+  //  Function to execute the redeem operation
+  const handleConfirmRedeem = async () => {
+    if (!cardToRedeem) return;
+    
+    setIsRedeeming(true);
+    try {
+      // Send PATCH request to update the status to 'Redeemed'
+      await axios.patch(
+        `${process.env.REACT_APP_API_URL}/admin/manage/giftcards/${cardToRedeem._id}/status`,
+        { status: 'Redeemed' },
+        { withCredentials: true } // Ensure cross-origin requests carry Cookies
+      );
+
+      // Optimistic update: directly modify the card status on the frontend without refetching the whole list for seamless interaction
+      setGiftcards(prevCards => 
+        prevCards.map(card => 
+          card._id === cardToRedeem._id ? { ...card, status: 'Redeemed' } : card
+        )
+      );
+      
+      // Close the modal
+      setCardToRedeem(null);
+    } catch (error) {
+      console.error('Failed to redeem giftcard:', error);
+      alert('Failed to redeem giftcard. Please check console.');
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
+  // Returns the list of cards that match the currently selected filter.
+  const filteredCards = giftcards.filter(card => {
+    if (filter === 'ALL') return true;
+    return card.status && card.status.toUpperCase() === filter;
+  });
+
+  // Computes the number of cards in each status category.
+  const activeCount = giftcards.filter(c => c.status && c.status.toUpperCase() === 'ACTIVE').length;
+  const redeemedCount = giftcards.filter(c => c.status && c.status.toUpperCase() === 'REDEEMED').length;
+
   return (
-    // 1. OUTER CONTAINER: Takes full height of the parent, enables vertical flex
-    <div className="animate-fadeIn h-full flex flex-col">
+    <div className="animate-fadeIn h-full flex flex-col relative">
 
-      {/* ============================================================
-          FIXED HEADER SECTION (Title, Buttons, Filters)
-          ============================================================ */}
-      {/* 2. SHRINK-0: Prevents this entire block from squeezing. Groups title and filters together. */}
       <div className="shrink-0 flex flex-col gap-6 mb-8">
-
-        {/* Title + Issue Giftcard Button */}
         <div className="flex justify-between items-end">
           <h1 className="font-serif text-4xl text-white italic tracking-wide">
             Giftcard Center
           </h1>
-
-          {/* Future: This will open a modal to issue a new gift card */}
           <button className="bg-[#ae8231] hover:bg-[#b45309] text-white text-[10px] font-bold tracking-[0.2em] px-6 py-3 rounded-full transition-colors uppercase shadow-lg shadow-orange-900/20">
             + Issue Giftcard
           </button>
         </div>
 
-        {/* Status Filter Pills */}
         <div className="flex gap-4">
-          {/* Total issued */}
-          <div className="flex items-center gap-2 bg-[#C5A059] px-4 py-2 rounded-full cursor-pointer shadow-lg shadow-orange-900/20">
-            <span className="text-white text-[10px] font-bold tracking-widest uppercase">
+
+          {/* Total Issued */}
+          <div 
+            onClick={() => setFilter('ALL')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-colors ${
+              filter === 'ALL' 
+                ? 'bg-[#C5A059] shadow-lg shadow-orange-900/20' 
+                : 'bg-[#222] border border-white/5 hover:border-white/20'
+            }`}
+          >
+            <span className={`text-[10px] font-bold tracking-widest uppercase ${filter === 'ALL' ? 'text-white' : 'text-gray-400'}`}>
               Total Issued
             </span>
             <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
@@ -565,30 +578,43 @@ function MockGiftcardsView() {
           </div>
 
           {/* Active */}
-          <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
-            <span className="text-gray-400 text-[10px] tracking-widest uppercase">
+          <div 
+            onClick={() => setFilter('ACTIVE')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-colors ${
+              filter === 'ACTIVE' 
+                ? 'bg-[#C5A059] shadow-lg shadow-orange-900/20' 
+                : 'bg-[#222] border border-white/5 hover:border-white/20'
+            }`}
+          >
+            <span className={`text-[10px] font-bold tracking-widest uppercase ${filter === 'ACTIVE' ? 'text-white' : 'text-gray-400'}`}>
               Active
+            </span>
+            <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
+              {activeCount}
             </span>
           </div>
 
           {/* Redeemed */}
-          <div className="flex items-center gap-2 bg-[#222] border border-white/5 hover:border-white/20 px-4 py-2 rounded-full cursor-pointer transition-colors">
-            <span className="text-gray-400 text-[10px] tracking-widest uppercase">
+          <div 
+            onClick={() => setFilter('REDEEMED')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-colors ${
+              filter === 'REDEEMED' 
+                ? 'bg-[#C5A059] shadow-lg shadow-orange-900/20' 
+                : 'bg-[#222] border border-white/5 hover:border-white/20'
+            }`}
+          >
+            <span className={`text-[10px] font-bold tracking-widest uppercase ${filter === 'REDEEMED' ? 'text-white' : 'text-gray-400'}`}>
               Redeemed
             </span>
+            <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">
+              {redeemedCount}
+            </span>
           </div>
-        </div>
 
+        </div>
       </div>
 
-      {/* ============================================================
-          SCROLLABLE DATA TABLE CONTAINER
-          ============================================================ */}
-      {/* 3. FLEX-1 & OVERFLOW-Y-AUTO: Takes remaining space and enables scrolling */}
       <div className="bg-[#0f0f0f] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative">
-
-        {/* 4. STICKY HEADER: Stays at the top of the scrollable container. 
-             Added solid background color to hide scrolling items underneath */}
         <div className="sticky top-0 z-10 bg-[#0f0f0f] flex text-[10px] tracking-widest text-gray-500 uppercase px-6 py-5 border-b border-white/5 shadow-md">
           <div className="w-[30%] font-medium">Voucher Code & Recipient</div>
           <div className="w-[15%] font-medium">Value</div>
@@ -597,81 +623,64 @@ function MockGiftcardsView() {
           <div className="w-[15%] font-medium text-right">Actions</div>
         </div>
 
-        {/* List Content Padding Wrapper */}
         <div className="p-6">
-          {/* ================= Loading / Empty / Data States ================= */}
           {loading ? (
             <div className="text-center text-[#C5A059] tracking-widest text-sm uppercase py-20 animate-pulse">
               Retrieving Vault Records...
             </div>
-          ) : giftcards.length === 0 ? (
+          ) : filteredCards.length === 0 ? (
             <div className="text-center text-gray-500 tracking-widest text-sm uppercase py-20">
-              No giftcards issued yet.
+              No {filter !== 'ALL' ? filter.toLowerCase() : ''} giftcards found.
             </div>
           ) : (
             <div className="space-y-3">
-              {giftcards.map((card) => (
+
+              {filteredCards.map((card) => (
                 <div
                   key={card._id}
                   className="flex items-center bg-[#1a1a1a] p-6 rounded-lg border border-transparent hover:border-[#C5A059]/30 transition-all duration-300 group"
                 >
 
-                  {/* -----------------------------------------------------------
-                     1. Gift Code & Recipient (30%)
-                     ----------------------------------------------------------- */}
+                  {/* 1. Gift Code & Recipient */}
                   <div className="w-[30%] pr-4 flex items-center gap-4">
-
-                    {/* Decorative giftcard icon */}
                     <div className="w-10 h-8 rounded bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] text-xs">
                       🎁
                     </div>
-
                     <div>
-                      {/* Use the actual giftCode field from your database */}
                       <h3 className="text-white text-sm font-mono tracking-widest mb-1">
                         {card.giftCode || 'UNKNOWN CODE'}
                       </h3>
-
+                      {/* Added display for FROM and TO information */}
                       <p className="text-gray-600 text-[9px] tracking-widest uppercase">
-                        TO: {card.recipientName || card.recipientEmail || 'Anonymous Guest'}
+                        FROM: {card.buyerName || 'Admin'} <br/>
+                        TO: {card.recipientName || card.recipientEmail || 'Guest'}
                       </p>
                     </div>
                   </div>
 
-                  {/* -----------------------------------------------------------
-                     2. Giftcard Value (15%)
-                     ----------------------------------------------------------- */}
+                  {/* 2. Value */}
                   <div className="w-[15%]">
                     <p className="text-[#C5A059] text-lg font-serif italic tracking-wider">
                       €{card.amount || '0'}
                     </p>
                   </div>
 
-                  {/* -----------------------------------------------------------
-                     3. Validity Period (Created → No Expiry) (25%)
-                     ----------------------------------------------------------- */}
+                  {/* 3. Validity */}
                   <div className="w-[25%]">
                     <div className="flex items-center gap-2 mb-1">
-                      {/* Use createdAt as the issue date */}
                       <span className="text-gray-400 text-[11px] tracking-wide font-mono">
-                        {card.createdAt
-                          ? new Date(card.createdAt).toLocaleDateString()
-                          : '---'}
+                        {card.createdAt ? new Date(card.createdAt).toLocaleDateString() : '---'}
                       </span>
-
                       <span className="text-gray-600 text-[10px]">➔</span>
-
                       <span className="text-gray-400 text-[11px] tracking-wide font-mono">
                         No Expiry
                       </span>
                     </div>
                   </div>
 
-                  {/* -----------------------------------------------------------
-                     4. Status (15%)
-                     ----------------------------------------------------------- */}
+                  {/* 4. Status */}
                   <div className="w-[15%]">
-                    {card.status === 'Redeemed' ? (
+                    {card.status === 'Redeemed' || card.status === 'REDEEMED' ? (
                       <span className="border border-gray-600 text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full text-[9px] font-bold tracking-widest uppercase">
                         REDEEMED
                       </span>
@@ -682,26 +691,59 @@ function MockGiftcardsView() {
                     )}
                   </div>
 
-                  {/* -----------------------------------------------------------
-                     5. Action Buttons (15%)
-                     ----------------------------------------------------------- */}
+                  {/* 5. Actions */}
                   <div className="w-[15%] flex justify-end gap-4">
-                    {/* Void Giftcard */}
-                    <button
-                      className="flex flex-col items-center gap-1 group/btn"
-                      title="Void Giftcard"
-                    >
-                      <div className="w-8 h-8 rounded-full border border-red-900/50 text-red-500/50 flex items-center justify-center group-hover/btn:border-red-500 group-hover/btn:text-red-500 transition-all">
-                        ✕
-                      </div>
-                    </button>
+                    {/* Only show the Redeem button if the status is Active */}
+                    {(card.status === 'Active' || card.status === 'ACTIVE') && (
+                      <button
+                        onClick={() => setCardToRedeem(card)}
+                        className="flex flex-col items-center gap-1 group/btn"
+                        title="Redeem Giftcard"
+                      >
+                        <div className="w-8 h-8 rounded-full border border-green-900/50 text-green-500/50 flex items-center justify-center group-hover/btn:border-green-500 group-hover/btn:text-green-500 group-hover/btn:bg-green-500/10 transition-all font-bold">
+                          ✓
+                        </div>
+                      </button>
+                    )}
                   </div>
+
                 </div>
               ))}
+
             </div>
           )}
         </div>
       </div>
+
+      {/*  NEW: Redeem Confirmation Modal */}
+      {cardToRedeem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#121212] border border-[#c5a059]/30 rounded-xl p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-2xl font-serif italic text-white mb-2">Redeem Giftcard?</h3>
+            <p className="text-gray-400 text-sm mb-6">
+              Are you sure you want to manually redeem the giftcard <strong className="text-[#c5a059] font-mono tracking-widest">{cardToRedeem.giftCode || 'UNKNOWN'}</strong> (€{cardToRedeem.amount})? This will mark it as fully used.
+            </p>
+            
+            <div className="flex justify-end gap-4">
+              <button 
+                onClick={() => setCardToRedeem(null)}
+                disabled={isRedeeming}
+                className="px-6 py-2 rounded-md text-xs font-bold tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmRedeem}
+                disabled={isRedeeming}
+                className="px-6 py-2 rounded-md text-xs font-bold tracking-widest uppercase bg-[#c5a059] hover:bg-[#b08d4a] text-white transition-colors flex items-center gap-2 shadow-lg"
+              >
+                {isRedeeming ? 'Processing...' : 'Confirm Redeem'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
