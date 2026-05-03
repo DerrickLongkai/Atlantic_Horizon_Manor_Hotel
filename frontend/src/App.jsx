@@ -2,10 +2,13 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
 
+// Import global scroll restoration component
+import ScrollToTop from './components/ScrollToTop';
+
 // AXIOS GLOBAL CONFIGURATION
 axios.defaults.withCredentials = true;
 
-// Base layout (includes Header & Footer for all client-facing pages)
+// Base layout
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Booking from './pages/Booking';
@@ -35,24 +38,21 @@ import Honeymoon from './pages/Lincoln/honeymoonPackage';
 function App() {
   return (
     <Router>
-      <Routes>
+      {/* Placed here to ensure scrolling resets to top on every route change */}
+      <ScrollToTop />
 
-        {/* =========================================
-            ADMIN ROUTES (Standalone pages without Layout)
-            ========================================= */}
+      <Routes>
+        {/* ADMIN ROUTES (Standalone pages without layout wrapper) */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+        {/* Standalone client routes */}
         <Route path="booking" element={<Booking />} />
         <Route path="self-checkin" element={<SelfCheckIn />} />
 
-        {/* =========================================
-            CLIENT ROUTES (Wrapped with Layout: Header + Footer)
-            ========================================= */}
+        {/* CLIENT ROUTES (Wrapped with Layout: includes Header + Footer) */}
         <Route path="/" element={<Layout />}>
-
-          {/* Default homepage */}
           <Route index element={<Home />} />
-          
 
           {/* Experience routes – Lincoln */}
           <Route path="michelineQualityFood" element={<MichelinFood />} />
@@ -72,7 +72,6 @@ function App() {
           <Route path="lodges" element={<PrivateLodges />} />
           <Route path="villas" element={<PrivateVillas />} />
           <Route path="exclusivity" element={<UltimateExclusivity />} />
-
         </Route>
       </Routes>
     </Router>
@@ -80,6 +79,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
