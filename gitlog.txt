@@ -1,0 +1,27 @@
+ git log --graph --oneline
+* 9033616 (HEAD -> main, origin/main, origin/HEAD) improve commets to make it super detailed
+* 407f61e updated giftcard management(Redeem)
+* a24eb33 updated booking management funtions
+* c096f26 updated funtions in Home page
+* 2a7371d divide controllers and routes
+* db836bf docs: update security features in README and enhance comments in Gallery and Introduction components
+* a8ab0ee feat: fixed bug on the admin login page
+*   8cac53c Merge branch 'main' of https://github.com/DerrickLongkai/Atlantic_Horizon_Manor_Hotel
+|\  
+| * 4d131a9 Update ReadMe
+| * 71cc059 refactor: update title in HoneymoonPackage component and improve password verification method in Staff model
+* | 9cbf443 add Bruno api test in backend folder
+|/  
+* f788704 ..
+* e3407be update
+* f287388 improved RBAC(role-based access control) from frontend to backend
+* bdf2f07 login data changed from JWT to Session
+* a4d9d44 improved comments in routes folder
+* 430a13a improved login and dashboard page
+*   56b2f0e Merge branch 'main' of https://github.com/DerrickLongkai/Atlantic_Horizon_Manor_Hotel
+|\  
+| * fdaee6d Fix image path for homepage screenshot
+| * 7a01217 Add homepage screenshot to README
+| * b192379 Add files via upload
+| * 43316a9 Update repository URL in installation instructions
+:
