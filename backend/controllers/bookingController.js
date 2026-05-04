@@ -5,7 +5,6 @@ const Booking = require('../models/Booking');
 
 /**
  * CONTROLLER: createBooking
- * -------------------------
  * Creates and stores a new booking record in the database.
  *
  * PROCESS OVERVIEW:
@@ -25,7 +24,6 @@ const createBooking = async (req, res) => {
   try {
     /**
      * 1. DATA EXTRACTION
-     * ------------------
      * Pulls booking details sent from the frontend.
      */
     const {
@@ -40,7 +38,6 @@ const createBooking = async (req, res) => {
 
     /**
      * 2. BASIC VALIDATION
-     * -------------------
      * Ensures the minimum required fields exist before proceeding.
      * Prevents incomplete or malformed bookings from being stored.
      */
@@ -59,7 +56,6 @@ const createBooking = async (req, res) => {
 
     /**
      * 3. MODEL INSTANTIATION
-     * ----------------------
      * Creates a new Booking document in memory.
      * This does NOT write to the database yet.
      */
@@ -75,7 +71,6 @@ const createBooking = async (req, res) => {
 
     /**
      * 4. DATABASE WRITE OPERATION
-     * ---------------------------
      * Saves the booking to MongoDB.
      * 'await' ensures the server waits for confirmation before responding.
      */
@@ -83,7 +78,6 @@ const createBooking = async (req, res) => {
 
     /**
      * 5. SUCCESS RESPONSE
-     * -------------------
      * Returns the newly created booking to the client.
      */
     res.status(201).json({
@@ -97,7 +91,6 @@ const createBooking = async (req, res) => {
 
     /**
      * ERROR HANDLING
-     * --------------
      * Returns a controlled 500 response without exposing internal details.
      */
     res.status(500).json({
@@ -109,7 +102,6 @@ const createBooking = async (req, res) => {
 
 /**
  * CONTROLLER: searchBooking
- * -------------------------
  * Searches for a booking using the guest's first name and email.
  * This is used for self check-in or reservation lookup.
  *
@@ -127,7 +119,6 @@ const searchBooking = async (req, res) => {
 
     /**
      * 1. BASIC VALIDATION
-     * -------------------
      * Ensures both fields are provided before querying the database.
      */
     if (!name || !email) {
@@ -138,7 +129,6 @@ const searchBooking = async (req, res) => {
 
     /**
      * 2. DATABASE SEARCH
-     * ------------------
      * - Uses a case-insensitive regex for the first name.
      * - Converts email to lowercase for consistent matching.
      */
@@ -149,7 +139,6 @@ const searchBooking = async (req, res) => {
 
     /**
      * 3. NO MATCH FOUND
-     * -----------------
      * Returns a 404 response if no reservation matches the provided details.
      */
     if (!booking) {
@@ -162,7 +151,6 @@ const searchBooking = async (req, res) => {
 
     /**
      * 4. SUCCESS RESPONSE
-     * -------------------
      * Returns the booking record to the client.
      */
     console.log("Match Found for:", name);

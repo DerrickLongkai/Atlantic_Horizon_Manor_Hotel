@@ -1,9 +1,7 @@
 const Staff = require('../models/Staff');
 
 /**
- * -------------------------------------------------------------
  * Middleware: Protect Admin Routes (Session-Based Authentication)
- * -------------------------------------------------------------
  * This middleware ensures that only authenticated staff members
  * can access internal admin routes.
  *
@@ -21,18 +19,14 @@ const Staff = require('../models/Staff');
  */
 const protectAdmin = async (req, res, next) => {
   /**
-   * -------------------------------------------------------------
    * 1. Check if the request contains a valid session
-   * -------------------------------------------------------------
    * If staffId exists, the user *should* be authenticated.
    * We still verify this against the database for safety.
    */
   if (req.session && req.session.staffId) {
     try {
       /**
-       * -------------------------------------------------------------
        * 2. Look up the staff member in the database
-       * -------------------------------------------------------------
        * `.select('-password')` ensures the password hash is never exposed.
        */
       req.staff = await Staff.findById(req.session.staffId).select('-password');
@@ -64,9 +58,7 @@ const protectAdmin = async (req, res, next) => {
   }
 
   /**
-   * -------------------------------------------------------------
    * 3. No valid session found
-   * -------------------------------------------------------------
    * This means:
    * - User is not logged in, OR
    * - Session expired, OR

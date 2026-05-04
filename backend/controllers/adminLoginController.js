@@ -64,7 +64,6 @@ const loginStaff = async (req, res) => {
 
       /**
        * 4. SESSION STORAGE
-       * ------------------
        * Stores essential identity information inside the session.
        * This allows persistent authentication across requests.
        */
@@ -74,7 +73,6 @@ const loginStaff = async (req, res) => {
 
       /**
        * 5. SAVE SESSION
-       * ---------------
        * Ensures the session is fully written before sending the response.
        */
       req.session.save((err) => {
@@ -103,7 +101,6 @@ const loginStaff = async (req, res) => {
 
     /**
      * INVALID CREDENTIALS
-     * -------------------
      * Returns 401 without revealing which field was incorrect.
      */
     return res.status(401).json({
@@ -123,7 +120,6 @@ const loginStaff = async (req, res) => {
 
 /**
  * CONTROLLER: logoutStaff
- * -----------------------
  * Destroys the session and clears the session cookie.
  *
  * SECURITY NOTES:
@@ -152,7 +148,6 @@ const logoutStaff = (req, res) => {
 
 /**
  * CONTROLLER: getMe
- * -----------------
  * Returns the currently authenticated staff member based on session data.
  *
  * USE CASES:

@@ -18,10 +18,6 @@ const LoginLog = require('../models/LoginLog');   // Mongoose model for security
  * - Admin dashboard booking management
  * - Operational oversight
  * - Reporting and auditing
- *
- * NOTES:
- * - Sorted by creation date (newest first)
- * - Should be protected by RBAC middleware at the route level
  */
 const getAllBookings = async (req, res) => {
   try {

@@ -5,7 +5,7 @@ const Facial = () => {
   return (
     <div className="font-mono text-[#2c372b]">
       
-      {/* --- Main Content Section (Soft Green Background) ---    */}
+      {/* Main Content Section (Soft Green Background)*/}
       <div className="bg-[#e2eadc] py-16 px-6 sm:px-12 lg:px-24">
         <div className="max-w-7xl mx-auto">
           
@@ -55,7 +55,7 @@ const Facial = () => {
         </div>
       </div>
 
-      {/* --- Luxury Booking Form Section --- */}
+      {/*Luxury Booking Form Section*/}
       <div className="bg-[#fcfaf8] py-24 px-6 sm:px-12 lg:px-24 border-t border-[#e5e0d8]">
         <div className="max-w-3xl mx-auto bg-white p-10 md:p-16 shadow-sm border border-[#f0ebe1]">
           
@@ -127,7 +127,7 @@ const Facial = () => {
               * Please arrive 15 minutes before your scheduled appointment.
             </p>
 
-            {/* Submit Button */}
+            {/*Submit Button*/}
             <div className="text-center mt-4">
               <button 
                 type="button" 

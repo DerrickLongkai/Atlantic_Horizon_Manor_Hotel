@@ -7,11 +7,9 @@ export default function AdminDashboard() {
   const [staffInfo, setStaffInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('bookings');
 
-  // ------------------------------------------------------------
   // 1. Load staff authentication info on component mount
   //    - Reads staffToken + staffInfo from localStorage
   //    - If missing, redirect to login (basic route guard)
-  // ------------------------------------------------------------
   useEffect(() => {
     const storedStaff = localStorage.getItem('staffInfo');
 
@@ -25,11 +23,9 @@ export default function AdminDashboard() {
     setStaffInfo(JSON.parse(storedStaff));
   }, [navigate]);
 
-  // ------------------------------------------------------------
   // 2. Role-Based Access Control (RBAC)
   //    - Each module defines which roles can access it
   //    - Staff roles: 'staff', 'manager', 'boss'
-  // ------------------------------------------------------------
   const allMenuModules = [
     {
       id: 'bookings',
@@ -56,11 +52,9 @@ export default function AdminDashboard() {
     ? allMenuModules.filter(menu => menu.allowedRoles.includes(staffInfo.role))
     : [];
 
-  // ------------------------------------------------------------
   // 3. Logout handler
   //    - Clears session data
   //    - Redirects to login
-  // ------------------------------------------------------------
   const handleLogout = async () => {
     try{
       // Send POST request to backend to destroy the session
@@ -85,9 +79,7 @@ export default function AdminDashboard() {
   return (
     <div className="h-screen overflow-hidden bg-[#141414] text-gray-300 font-sans flex">
       
-      {/* ============================================================
-         LEFT SIDEBAR — Branding, Staff Info, Navigation, Logout
-         ============================================================ */}
+      {/*LEFT SIDEBAR — Branding, Staff Info, Navigation, Logout*/}
       <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 flex flex-col relative z-10 shadow-2xl">
 
         {/* Logo + Branding */}
@@ -146,9 +138,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ============================================================
-         MAIN CONTENT AREA — Renders the selected module
-         ============================================================ */}
+      {/*MAIN CONTENT AREA — Renders the selected module*/}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <div className="p-10 flex-1 flex flex-col overflow-hidden">
           {/* Tab-based content switching */}
@@ -161,15 +151,11 @@ export default function AdminDashboard() {
   );
 }
 
-// ===============================================================
 // Bookings View Component (Fetches and displays real booking data)
-// ===============================================================
 
 
 function MockBookingsView() {
-  // -------------------------------------------------------------
   // Define colors and labels corresponding to states (matching your dark gold style)
-  // -------------------------------------------------------------
   const STATUS_STYLES = {
     PENDING: { border: 'border-gray-500', text: 'text-gray-400', bg: 'bg-gray-500/10', label: 'PENDING' },
     CONFIRMED: { border: 'border-[#f59e0b]', text: 'text-[#f59e0b]', bg: 'bg-[#f59e0b]/10', label: 'CONFIRMED' },
@@ -317,9 +303,7 @@ function MockBookingsView() {
   return (
     <div className="animate-fadeIn h-full flex flex-col">
 
-      {/* ============================================================
-          FIXED HEADER SECTION
-          ============================================================ */}
+      {/*FIXED HEADER SECTION*/}
       <div className="shrink-0 flex flex-col gap-6 mb-8">
 
         {/* Title + Create Booking Button */}
@@ -362,9 +346,7 @@ function MockBookingsView() {
         </div>
       </div>
 
-      {/* ============================================================
-          SCROLLABLE DATA TABLE CONTAINER
-          ============================================================ */}
+      {/*SCROLLABLE DATA TABLE CONTAINER*/}
       <div className="bg-[#141414] border border-white/5 rounded-xl shadow-2xl flex-1 overflow-y-auto relative scrollbar-hide">
 
         {/* STICKY HEADER */}

@@ -5,7 +5,6 @@ const Giftcard = require('../models/Giftcard'); // Mongoose model representing t
 
 /**
  * UTILITY: generateCode
- * ---------------------
  * Generates an 8‑character alphanumeric gift card code using a restricted
  * character set to avoid visually confusing characters.
  *
@@ -31,7 +30,6 @@ const generateCode = () => {
 
 /**
  * CONTROLLER: createGiftcard
- * --------------------------
  * Creates a new gift card entry in the database with:
  * - Secure, collision‑resistant gift code
  * - Buyer and recipient metadata
@@ -42,11 +40,6 @@ const generateCode = () => {
  * 2. Generate a unique gift code (with retry loop)
  * 3. Persist the new gift card to MongoDB
  * 4. Return the generated code to the client
- *
- * SECURITY & RELIABILITY:
- * - Includes a retry mechanism to avoid rare code collisions
- * - Avoids exposing internal DB errors directly to the client
- * - Ensures required fields are present before processing
  */
 const createGiftcard = async (req, res) => {
   try {
@@ -74,7 +67,6 @@ const createGiftcard = async (req, res) => {
 
     /**
      * 2. UNIQUENESS CHECK LOOP
-     * ------------------------
      * Attempts to generate a code that does not already exist in the database.
      * Although collisions are extremely unlikely, this ensures absolute safety.
      */
@@ -96,7 +88,6 @@ const createGiftcard = async (req, res) => {
 
     /**
      * 3. DATABASE PERSISTENCE
-     * -----------------------
      * Creates a new Giftcard document with all provided metadata.
      */
     const newGiftcard = new Giftcard({
@@ -112,7 +103,6 @@ const createGiftcard = async (req, res) => {
 
     /**
      * 4. SUCCESS RESPONSE
-     * -------------------
      * Returns only the generated code — not the full document — to avoid
      * exposing unnecessary internal fields.
      */

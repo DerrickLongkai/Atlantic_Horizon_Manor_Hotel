@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 /**
  * Gift Card Schema
- * -----------------
  * Defines the structure of gift card documents stored in MongoDB.
  * Includes validation rules to ensure data consistency.
  */
@@ -10,7 +9,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 1. Gift Amount
-   * ---------------
    * - Required field
    * - Restricted to predefined values for business control
    */
@@ -22,7 +20,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 2. Recipient Name
-   * ------------------
    * - Name of the person receiving the gift card
    */
   recipientName: {
@@ -32,7 +29,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 3. Recipient Email
-   * -------------------
    * - Must follow valid email format
    */
   recipientEmail: { 
@@ -46,7 +42,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 4. Buyer Name
-   * --------------
    * - Person purchasing the gift card
    */
   buyerName: { 
@@ -56,7 +51,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 5. Buyer Email
-   * ---------------
    * - Email of the purchaser
    */
    buyerEmail: {
@@ -67,7 +61,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 6. Gift Code (Core Identifier)
-   * -------------------------------
    * - Unique redemption code for the gift card
    * - Must be unique across the database
    */
@@ -79,7 +72,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 7. Status
-   * ----------
    * Tracks lifecycle of the gift card:
    * - Active: usable
    * - Used: already redeemed
@@ -93,7 +85,6 @@ const giftcardSchema = new mongoose.Schema({
 
   /**
    * 8. Creation Timestamp
-   * ----------------------
    * Automatically records when the gift card was created
    */
   createdAt: { 

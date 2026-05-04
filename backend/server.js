@@ -15,9 +15,7 @@ const sessionMiddleware = createSessionMiddleware();
 const app = express();
 
 /**
- * -------------------------------------------------------------
  * CORS Configuration
- * -------------------------------------------------------------
  * Allows the frontend (React/Vite) to communicate with this API
  * while sending credentials such as session cookies.
  */
@@ -43,18 +41,14 @@ app.use(
 app.use(express.json());
 app.set('trust proxy', 1); // Trust the first proxy (if behind a reverse proxy like Nginx or Heroku)
 /**
- * -------------------------------------------------------------
  * Session Middleware
- * -------------------------------------------------------------
  * Session configuration is abstracted into /config/session.js
  * for cleaner structure and easier maintenance.
  */
 app.use(sessionMiddleware);
 
 /**
- * -------------------------------------------------------------
  * Request Logging Middleware (Debugging Helper)
- * -------------------------------------------------------------
  * Logs essential request details to help diagnose issues during
  * development. Disable or adjust verbosity in production.
  */
@@ -66,9 +60,7 @@ app.use((req, res, next) => {
 });
 
 /**
- * -------------------------------------------------------------
  * Route Mounting
- * -------------------------------------------------------------
  * All API routes are organized by feature domain for clarity.
  */
 app.use('/api/admin/manage', require('./routes/adminManageRoutes'));

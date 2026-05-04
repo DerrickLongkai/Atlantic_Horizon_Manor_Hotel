@@ -5,7 +5,7 @@ import privateImg from '../images/George/Superior(1)/view.png';
 import premiumImg from '../images/George/premium(2)/view4.avif';
 import exclusivityImg from '../images/George/ultimate(3)/bed.avif';
 
-// --- 1. Define Steps and Mock Data ---
+// 1. Define Steps and Mock Data
 const steps = ['SERVICE', 'DETAILS', 'GUEST INFO', 'REVIEW'];
 
 const experiences = [
@@ -45,7 +45,7 @@ export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // --- 2. State Management ---
+  // 2. State Management 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -73,7 +73,7 @@ export default function BookingPage() {
 
   const selectedRoom = experiences.find(exp => exp.id === bookingData.selectedRoomId);
 
-  // --- Date Calculation Helper ---
+  // Date Calculation Helper
   // Calculate the total number of nights between check-in and check-out
   const calculateNights = (inDateStr, outDateStr) => {
     if (inDateStr === 'Not Selected' || outDateStr === 'Not Selected') return 1;
@@ -87,7 +87,7 @@ export default function BookingPage() {
 
   const totalNights = calculateNights(bookingData.checkIn, bookingData.checkOut);
 
-  // --- 3. Interaction & Navigation Logic ---
+  // 3. Interaction & Navigation Logic
   const handleBack = () => {
     if (currentStep === 1) {
       navigate(-1); 
@@ -172,7 +172,7 @@ const handleConfirm = async () => {
     }));
   };
 
-  // --- 4. Step Rendering Functions ---
+  //4. Step Rendering Functions
 
   // STEP 1: Select Experience
   const renderStep1 = () => (
@@ -392,8 +392,7 @@ const handleConfirm = async () => {
     );
   };
 
-  // --- 5. Main Render Area ---
- // --- 5. Main Render Area ---
+  //  5. Main Render Area 
   return (
     <div className="min-h-screen bg-[#111111] text-white font-sans pb-10">
       
@@ -435,7 +434,7 @@ const handleConfirm = async () => {
           </div>
         </div>
       ) : (
-        /* --- Original Booking Flow UI --- */
+        /* Original Booking Flow UI */
         <>
           {/* Top Navigation Bar */}
           <header className="flex justify-between items-center px-8 md:px-16 py-8 text-xs tracking-[0.2em]">
